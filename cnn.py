@@ -10,7 +10,7 @@ import time
 # TODO: Build your own LeNet model #
 ####################################
 class conv_layer(object):
-    def __init__(self, input_x, in_channel, out_channel, kernel_shape, rand_seed, index=0, x_stride, y_stride,resp_norm=False):
+    def __init__(self, input_x, in_channel, out_channel, kernel_shape, rand_seed, index=0, x_stride=1, y_stride=1, resp_norm=False):
         """
         :param input_x: The input of the conv layer. Should be a 4D array like (batch_num, img_len, img_len, channel_num)
         :param in_channel: The 4-th demension (channel number) of input matrix. For example, in_channel=3 means the input contains 3 channels.
@@ -19,7 +19,7 @@ class conv_layer(object):
         :param rand_seed: An integer that presents the random seed used to generate the initial parameter value.
         :param index: The index of the layer. It is used for naming only.
         """
-        assert len(input_x.shape) == 4 and input_x.shape[1] == input_x.shape[2] and input_x.shape[3] == in_channel
+        assert len(input_x.shape) == 4 and input_x.shape[3] == in_channel
 
         with tf.variable_scope('conv_layer_%d' % index):
             with tf.name_scope('conv_kernel'):
