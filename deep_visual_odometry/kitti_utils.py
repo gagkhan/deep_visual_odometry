@@ -4,13 +4,11 @@ import pykitti
 
 class KITTIdata():
     """
-
     ignore the first image for differing
 
     """
     def __init__(self, basedir, sequences):
         self.sequence_nos = sequences
-
         self.dataset = {}
         for sequence in sequences:
             self.dataset[sequence] =  pykitti.odometry(basedir, sequence)
@@ -31,6 +29,7 @@ class KITTIdata():
 
     def get_series(self, sequence_len = 100, sequences = None):
         pass
+
 
 
 
