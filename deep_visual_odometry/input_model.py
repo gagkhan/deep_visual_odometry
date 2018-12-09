@@ -98,20 +98,19 @@ def Input_CNN(input_x, input_y, is_training,
         l2_loss = tf.reduce_sum([tf.norm(w) for w in fc_w])
         l2_loss += tf.reduce_sum([tf.reduce_sum(tf.norm(w, axis=[-2, -1])) for w in conv_w])
 
-        label = input_y
-        cross_entropy_loss = tf.reduce_mean(
-            tf.nn.softmax_cross_entropy_with_logits(labels=label, logits=fc_layer_2.output()),
-            name='cross_entropy')
-        loss = tf.add(cross_entropy_loss, l2_norm * l2_loss, name='loss')
+        mse_loss = tf.reduce_mean(
+            tf.squared_difference(fc_layer_2.output(),input_y),
+            name='mse')
+        loss = tf.add(mse_loss, l2_norm * l2_loss, name='loss')
 
         tf.summary.scalar('Loss', loss)
 
     return fc_layer_2.output(), loss
 
 
-def cross_entropy(output, input_y):
-    with tf.name_scope('cross_entropy'):
-        ce = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=input_y, logits=output))
+def mse(output, input_y):
+    with tf.name_scope('mse'):
+        ce = tf.reduce_mean(tf.squared_difference(output,input_y))
 
     return ce
 
