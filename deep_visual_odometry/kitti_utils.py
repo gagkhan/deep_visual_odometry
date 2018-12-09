@@ -40,8 +40,8 @@ class KITTIdata(object):
         self.poses = {}
         
         # masks
-        self.input_data_mask1 = np.random.choice(len(dataset['00'].cam2_files),len(dataset['00'].cam2_files),replace = False)
-        self.input_data_mask2 = np.random.choice(len(dataset['01'].cam2_files),len(dataset['01'].cam2_files),replace = False)
+        #self.input_data_mask1 = np.random.choice(len(dataset['00'].cam2_files),len(dataset['00'].cam2_files),replace = False)
+        #self.input_data_mask2 = np.random.choice(len(dataset['01'].cam2_files),len(dataset['01'].cam2_files),replace = False)
 
         for sequence in sequences:
 
@@ -122,7 +122,8 @@ class KITTIdata(object):
          
     def load_data(self,val_frac = 0.1, test_frac = 0):
         
-        train_data = 
+        #train_data = 
+        pass
         
 
     def load_data_input_model(self):
