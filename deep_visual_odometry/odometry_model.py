@@ -49,13 +49,12 @@ class OdomModel():
         '''
         build the input layer
         '''
-        self.inputs = tf.placeholder(tf.int32, shape=(self.batch_size, self.num_steps), name='inputs')
-        self.targets = tf.placeholder(tf.int32, shape=(self.batch_size, self.num_steps), name='targets')
+        self.inputs = tf.placeholder(tf.int32, shape=(self.batch_size, self.num_steps, 2), name='inputs')
+        self.targets = tf.placeholder(tf.int32, shape=(self.batch_size, self.num_steps, 3), name='targets')
 
         # add keep_prob
         self.keep_prob = tf.placeholder(tf.float32, name='keep_prob')
         # one_hot encoding
-        self.rnn_inputs = tf.one_hot(self.inputs, self.num_classes)
 
     def rnn_layer(self):
         '''
@@ -80,7 +79,7 @@ class OdomModel():
         rnn_layers = [build_cell() for i in range(self.num_layers)]
         multi_rnn_cell = tf.nn.rnn_cell.MultiRNNCell(rnn_layers, state_is_tuple=True)
         self.initial_state = multi_rnn_cell.zero_state(self.batch_size, dtype=tf.float32)
-        self.rnn_outputs, self.final_state = tf.nn.dynamic_rnn(multi_rnn_cell, inputs=self.rnn_inputs, dtype=tf.float32,
+        self.rnn_outputs, self.final_state = tf.nn.dynamic_rnn(multi_rnn_cell, inputs=self.inputs, dtype=tf.float32,
                                                                initial_state=self.initial_state)
 
     def outputs_layer(self):
@@ -108,11 +107,10 @@ class OdomModel():
         calculate loss according to logits and targets
         '''
         # One-hot coding
-        y_one_hot = tf.one_hot(self.targets, self.num_classes)
-        y_reshaped = tf.reshape(y_one_hot, self.logits.get_shape())
+
 
         # Softmax cross entropy loss
-        loss = tf.nn.softmax_cross_entropy_with_logits_v2(logits=self.logits, labels=y_reshaped)
+        loss = tf.nn.softmax_cross_entropy_with_logits_v2(logits=self.logits, labels=self.targets)
         self.loss = tf.reduce_mean(loss)
 
     def optimizer(self):
