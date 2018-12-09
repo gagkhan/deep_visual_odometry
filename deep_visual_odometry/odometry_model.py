@@ -2,7 +2,7 @@ import tensorflow as tf
 import numpy as np
 import time
 
-class OdomModel():
+class OdomModel(object):
     def __init__(self, num_classes, batch_size=64, num_steps=50, cell_type='LSTM',
                  rnn_size=128, num_layers=2, learning_rate=0.001,
                  grad_clip=5, train_keep_prob=0.5, sampling=False):
