@@ -1,7 +1,6 @@
 import pykitti
 import numpy as np
 # load data set using pykitti
-
 class KITTIdata():
     """
     ignore the first image for differing
@@ -19,23 +18,22 @@ class KITTIdata():
             self.dataset_len[sequence] = len(self.dataset[sequence].cam2_files)
             self.img_idx[sequence] = 0
 
-    def _process(self, images):
-        # images is a tuple = (prev_image, curr__image)
-        # take diff with previous image per channel = gives 3 new channels
-        # append this to for 150x50x6 from two 150x50x3
-        # return new_image
-        pass
-
     def get_series_batch(self, sequence_len = 100,  batch_size = 10, sequences = None):
-        # will provide series from all kitti sequences, unless specified
-        if sequences is None:
-            pass
-        else:
-            pass
+        batch_input = []
+        batch_velocities = []
+        batch_poses = []
+        for _ in range(batch_size):
+            input, velocities, poses = self.get_series(sequence_len)
+            batch_input.append(input)
+            batch_velocities.append(velocities)
+            batch_poses.append(poses)
 
-    def get_series(self, sequence_len = 100, sequences = None):
+        return np.stack(batch_input), np.stack(velocities), np.stack(poses)
+
+    def get_series(self, sequence_len = 100, sequences = None, ):
         if sequences is None:
            sequences = self.sequences
+        self.seq_idx %= len(self.sequences)
         while self.sequences[self.seq_idx] not in sequences:
             self.seq_idx += 1
         sequence = self.sequences[self.seq_idx]
@@ -52,18 +50,54 @@ class KITTIdata():
         image_plus_diff_images = []
         for i in range(sequence_len):
             diff_image = images[i+1] - images[i]
-            image_plus_diff_images.append(np.concatenate((images[i], diff_image), axis = 2))
+            image_plus_diff_images.append(np.concatenate((images[i+1], diff_image), axis = 2))
         series_input = np.stack(image_plus_diff_images)
 
-        # TODO: ground truth poses
+        # def normalize_cols(M):
+        #     for i in range(M.shape[1]):
+        #         M[:, i] /= np.linalg.norm(M[:, i])
+        #     return M
+
+        def angle(T):
+            R = T[:3, :3]
+            return np.arctan2(R[1, 0], R[0, 0])
+
+        def get_vel(T_prev, T_curr):
+            delta_T = np.dot(np.linalg.inv(T_prev), T_curr)
+            delta_rot = angle(delta_T)
+            delta_pos = np.linalg.norm(delta_T[0:3, 3])
+            return np.array([delta_pos, delta_rot])
+
+        def get_pose(T):
+            x = T[0,3]
+            y = T[1,3]
+            theta = angle(T)
+            return np.array([x, y, theta])
+
+        # poses and estimated velocity
+        poses = []
+        velocities = []
+        dataset_poses = self.dataset[sequence].poses
+        for i in range(sequence_len):
+            velocities.append(get_vel(dataset_poses[i],dataset_poses[i+1]))
+            poses.append(get_pose(dataset_poses[i+1]))
+        poses = np.stack(poses)
+        velocities = np.stack(velocities)
+
         self.img_idx[sequence] += 1
         if self.img_idx[sequence] + sequence_len >= self.dataset_len[sequence] - 1:
             self.img_idx[sequence] = 0
-        while self.sequences[self.seq_idx] not in sequences:
-            self.seq_idx+= 1
+        self.seq_idx+= 1
 
-        #TODO: return ground truth poses
-        return series_input
+        return series_input, velocities, poses
+
+
+
+
+
+
+
+
 
 
 
