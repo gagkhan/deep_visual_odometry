@@ -2,7 +2,7 @@ import tensorflow as tf
 import numpy as np
 import cnn as CNN
 
-def Input_CNN(input_x, input_y, is_training,
+def InputCNN(input_x, input_y, is_training,
           img_len=32, channel_num=6, output_size=3,
           conv_featmap=[16,16,16,16], fc_units=[128,128],
           conv_kernel_size=[7,5,5,5], pooling_size=[2,2,2,2],
@@ -85,7 +85,7 @@ def Input_CNN(input_x, input_y, is_training,
                           in_size=fc_units[1],
                           out_size=output_size,
                           rand_seed=seed,
-                          keep_prob=.75,
+                          keep_prob=.9,
                           activation_function=tf.nn.relu,
                           index=2)
 
@@ -108,7 +108,7 @@ def Input_CNN(input_x, input_y, is_training,
     return fc_layer_2.output(), loss
 
 
-def mse(output, input_y):
+def loss(output, input_y):
     with tf.name_scope('mse'):
         ce = tf.reduce_mean(tf.squared_difference(output,input_y))
 
@@ -157,7 +157,7 @@ def training(X_train, y_train, X_val, y_val,
         ys = tf.placeholder(shape=[None, 2], dtype=tf.int64)
         is_training = tf.placeholder(tf.bool, name='is_training')
 
-    output, loss = Input_CNN(xs, ys, is_training,
+    output, loss = InputCNN(xs, ys, is_training,
                          img_len=32,
                          channel_num=6,
                          output_size=3,
