@@ -34,8 +34,13 @@ class KITTIdata():
         self.seq_idx = 0
 
         self.input = {}
+        
         self.velocities = {}
         self.poses = {}
+        
+        # masks
+        self.input_data_mask1 = np.random.choice(len(dataset['00'].cam2_files),len(dataset['00'].cam2_files),replace = False)
+        self.input_data_mask2 = np.random.choice(len(dataset['01'].cam2_files),len(dataset['01'].cam2_files),replace = False)
 
         for sequence in sequences:
 
@@ -44,7 +49,8 @@ class KITTIdata():
             self.dataset_len[sequence] = len(self.dataset[sequence].cam2_files)
             self.img_idx[sequence] = 0
 
-            input = []
+           
+            input_images = []
             velocities = []
             poses = []
 
@@ -59,12 +65,14 @@ class KITTIdata():
                     image = image.resize(size=self.img_size)
                 image = np.array(image, dtype=np.uint8)
                 diff_image = image - image_prev
-                input.append(np.concatenate((image, diff_image), axis = 2))
+                
+                input_images.append(np.concatenate((image, diff_image), axis = 2))
                 image_prev = image
                 velocities.append(get_vel(dataset.poses[i-1], dataset.poses[i]))
                 poses.append(get_pose(dataset.poses[i]))
 
-            self.input[sequence] = np.stack(input)
+            
+            self.input[sequence] = np.stack(input_images)
             self.velocities[sequence] = np.stack(velocities)
             self.poses[sequence] = np.stack(poses)
             print('completed load sequence {} data'.format(sequence))
@@ -74,8 +82,9 @@ class KITTIdata():
         batch_velocities = []
         batch_poses = []
         for _ in range(batch_size):
-            input, velocities, poses = self.get_series(sequence_len)
-            batch_input.append(input)
+           
+            input_x, velocities, poses = self.get_series(sequence_len)
+            batch_input.append(input_images)
             batch_velocities.append(velocities)
             batch_poses.append(poses)
 
@@ -90,6 +99,7 @@ class KITTIdata():
 
         sequence = self.sequences[self.seq_idx]
         idx = self.img_idx[sequence]
+        print(idx)
         series_input = self.input[sequence][idx: idx + sequence_len]
         velocities = self.velocities[sequence][idx: idx + sequence_len]
         poses = self.poses[sequence][idx: idx + sequence_len]
@@ -100,7 +110,19 @@ class KITTIdata():
         self.seq_idx+= 1
 
         return series_input, velocities, poses
-
+    
+    def get_series_train(self, sequence_len = 100, sequences = None, ):
+        p = np.random.randn(1,1)
+        seq_num = 0
+        if(p>0.5):
+            seq_num = 0
+        else:
+            seq_num = 1
+         
+    def load_data(self,val_frac = 0.1, test_frac = 0):
+        
+        train_data = 
+        
 
 
 
