@@ -2,7 +2,7 @@ import tensorflow as tf
 import numpy as np
 import time
 
-class OdomModel():
+class OdomModel(object):
     def __init__(self, num_classes, batch_size=64, num_steps=50, cell_type='LSTM',
                  rnn_size=128, num_layers=2, learning_rate=0.001,
                  grad_clip=5, train_keep_prob=0.5, sampling=False):
@@ -92,15 +92,15 @@ class OdomModel():
         x = tf.reshape(seq_output, [-1, self.rnn_size])
 
         # define softmax layer variables:
-        with tf.variable_scope('softmax'):
-            softmax_w = tf.Variable(tf.truncated_normal([self.rnn_size, self.num_classes], stddev=0.1))
-            softmax_b = tf.Variable(tf.zeros(self.num_classes))
+        with tf.variable_scope('mse'):
+            mse_w = tf.Variable(tf.truncated_normal([self.rnn_size, 3], stddev=0.1))
+            mse_b = tf.Variable(tf.zeros(3))
 
         # calculate logits
-        self.logits = tf.matmul(x, softmax_w) + softmax_b
+        self.logits = tf.matmul(x, mse_w) + mse_b
 
         # softmax generate probability predictions
-        self.prob_pred = tf.nn.softmax(self.logits, name='predictions')
+        # self.prob_pred = tf.nn.softmax(self.logits, name='predictions')
 
     def loss(self):
         '''
@@ -110,7 +110,7 @@ class OdomModel():
 
 
         # Softmax cross entropy loss
-        loss = tf.nn.softmax_cross_entropy_with_logits_v2(logits=self.logits, labels=self.targets)
+        loss = tf.squared_difference(logits=self.logits, labels=self.targets)
         self.loss = tf.reduce_mean(loss)
 
     def optimizer(self):

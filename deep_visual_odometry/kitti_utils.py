@@ -18,9 +18,10 @@ def get_pose(T):
     theta = angle(T)
     return np.array([x, y, theta])
 
-class KITTIdata():
+class KITTIdata(object):
     """
-
+    as
+    dsa
 
     """
     def __init__(self, basedir, sequences, img_size = None):
@@ -49,7 +50,10 @@ class KITTIdata():
             self.dataset_len[sequence] = len(self.dataset[sequence].cam2_files)
             self.img_idx[sequence] = 0
 
+<<<<<<< HEAD
            
+=======
+>>>>>>> 23a5fba27325cdee1d4b2b356640ba5ef506c75b
             input_images = []
             velocities = []
             poses = []
@@ -65,13 +69,19 @@ class KITTIdata():
                     image = image.resize(size=self.img_size)
                 image = np.array(image, dtype=np.uint8)
                 diff_image = image - image_prev
+<<<<<<< HEAD
                 
+=======
+>>>>>>> 23a5fba27325cdee1d4b2b356640ba5ef506c75b
                 input_images.append(np.concatenate((image, diff_image), axis = 2))
                 image_prev = image
                 velocities.append(get_vel(dataset.poses[i-1], dataset.poses[i]))
                 poses.append(get_pose(dataset.poses[i]))
 
+<<<<<<< HEAD
             
+=======
+>>>>>>> 23a5fba27325cdee1d4b2b356640ba5ef506c75b
             self.input[sequence] = np.stack(input_images)
             self.velocities[sequence] = np.stack(velocities)
             self.poses[sequence] = np.stack(poses)
@@ -82,8 +92,12 @@ class KITTIdata():
         batch_velocities = []
         batch_poses = []
         for _ in range(batch_size):
+<<<<<<< HEAD
            
             input_x, velocities, poses = self.get_series(sequence_len)
+=======
+            input_images, velocities, poses = self.get_series(sequence_len)
+>>>>>>> 23a5fba27325cdee1d4b2b356640ba5ef506c75b
             batch_input.append(input_images)
             batch_velocities.append(velocities)
             batch_poses.append(poses)
@@ -123,6 +137,20 @@ class KITTIdata():
         
         train_data = 
         
+
+    def load_data_input_model(self):
+        input_images = []
+        velocities = []
+        for sequence in self.sequences:
+            input_images.append(self.input[sequence])
+            velocities.append(self.velocities[sequence])
+        input_images = np.concatenate(input_images)
+        velocities = np.concatenate(velocities)
+        return input_images, velocities
+
+
+
+
 
 
 

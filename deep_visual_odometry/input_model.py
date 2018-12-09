@@ -2,7 +2,7 @@ import tensorflow as tf
 import numpy as np
 import cnn as CNN
 
-def Input_CNN(input_x, input_y, is_training,
+def InputCNN(input_x, input_y, is_training,
           img_len=32, channel_num=6, output_size=3,
           conv_featmap=[16,16,16,16], fc_units=[128,128],
           conv_kernel_size=[7,5,5,5], pooling_size=[2,2,2,2],
@@ -85,7 +85,7 @@ def Input_CNN(input_x, input_y, is_training,
                           in_size=fc_units[1],
                           out_size=output_size,
                           rand_seed=seed,
-                          keep_prob=.75,
+                          keep_prob=.9,
                           activation_function=tf.nn.relu,
                           index=2)
 
@@ -98,20 +98,19 @@ def Input_CNN(input_x, input_y, is_training,
         l2_loss = tf.reduce_sum([tf.norm(w) for w in fc_w])
         l2_loss += tf.reduce_sum([tf.reduce_sum(tf.norm(w, axis=[-2, -1])) for w in conv_w])
 
-        label = input_y
-        cross_entropy_loss = tf.reduce_mean(
-            tf.nn.softmax_cross_entropy_with_logits(labels=label, logits=fc_layer_2.output()),
-            name='cross_entropy')
-        loss = tf.add(cross_entropy_loss, l2_norm * l2_loss, name='loss')
+        mse_loss = tf.reduce_mean(
+            tf.squared_difference(fc_layer_2.output(),input_y),
+            name='mse')
+        loss = tf.add(mse_loss, l2_norm * l2_loss, name='loss')
 
         tf.summary.scalar('Loss', loss)
 
     return fc_layer_2.output(), loss
 
 
-def cross_entropy(output, input_y):
-    with tf.name_scope('cross_entropy'):
-        ce = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=input_y, logits=output))
+def loss(output, input_y):
+    with tf.name_scope('mse'):
+        ce = tf.reduce_mean(tf.squared_difference(output,input_y))
 
     return ce
 
@@ -158,7 +157,7 @@ def training(X_train, y_train, X_val, y_val,
         ys = tf.placeholder(shape=[None, 2], dtype=tf.int64)
         is_training = tf.placeholder(tf.bool, name='is_training')
 
-    output, loss = Input_CNN(xs, ys, is_training,
+    output, loss = InputCNN(xs, ys, is_training,
                          img_len=32,
                          channel_num=6,
                          output_size=3,
