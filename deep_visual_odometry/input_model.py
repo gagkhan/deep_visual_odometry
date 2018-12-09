@@ -1,6 +1,6 @@
 import tensorflow as tf
 import numpy as np
-import cnn as CNN
+import deep_visual_odometry.cnn as CNN
 
 def InputCNN(input_x, input_y, is_training,
           img_len=32, channel_num=6, output_size=3,
