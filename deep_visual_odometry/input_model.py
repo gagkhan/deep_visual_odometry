@@ -28,7 +28,7 @@ def InputCNN(input_x, input_y, is_training,
                               kernel_shape=conv_kernel_size[1],
                               rand_seed=seed,
                               index=1,
-                              x_stride=2)
+                              y_stride=2)
     
     pooling_layer_1 = CNN.max_pooling_layer(input_x=conv_layer_1.output(),
                                         k_size=pooling_size[1],
@@ -40,7 +40,7 @@ def InputCNN(input_x, input_y, is_training,
                               kernel_shape=conv_kernel_size[2],
                               rand_seed=seed,
                               index=2,
-                              x_stride=2)
+                              y_stride=2)
     
     pooling_layer_2 = CNN.max_pooling_layer(input_x=conv_layer_2.output(),
                                         k_size=pooling_size[2],
@@ -108,7 +108,7 @@ def InputCNN(input_x, input_y, is_training,
     return fc_layer_2.output(), loss
 
 
-def loss(output, input_y):
+def mse(output, input_y):
     with tf.name_scope('mse'):
         ce = tf.reduce_mean(tf.squared_difference(output,input_y))
 
@@ -121,13 +121,14 @@ def train_step(loss, learning_rate=1e-3):
 
     return step
 
-
+"""
 def evaluate(output, input_y):
     with tf.name_scope('evaluate'):
         pred = tf.argmax(output, axis=1)
         error_num = tf.count_nonzero(pred - input_y, name='error_num')
         tf.summary.scalar('Error_num', error_num)
     return error_num
+    """
 
 def training(X_train, y_train, X_val, y_val,
              conv_featmap=[16,16,16,16],
@@ -153,14 +154,14 @@ def training(X_train, y_train, X_val, y_val,
 
     # define the variables and parameter needed during training
     with tf.name_scope('inputs'):
-        xs = tf.placeholder(shape=[None, 150, 50, 6], dtype=tf.float32)
-        ys = tf.placeholder(shape=[None, 2], dtype=tf.int64)
+        xs = tf.placeholder(shape=[None, 50, 150, 6], dtype=tf.float32)
+        ys = tf.placeholder(shape=[None, 2], dtype=tf.float32)
         is_training = tf.placeholder(tf.bool, name='is_training')
 
     output, loss = InputCNN(xs, ys, is_training,
                          img_len=32,
                          channel_num=6,
-                         output_size=3,
+                         output_size=2,
                          conv_featmap=conv_featmap,
                          fc_units=fc_units,
                          conv_kernel_size=conv_kernel_size,
@@ -172,10 +173,10 @@ def training(X_train, y_train, X_val, y_val,
     print('number of batches for training: {}'.format(iters))
 
     step = train_step(loss)
-    eve = evaluate(output, ys)
+    mserr = mse(output, ys)
 
     iter_total = 0
-    best_acc = 0
+    best_mse = np.inf
     cur_model_name = 'CNN_Velocity_Model'
 
     with tf.Session() as sess:
@@ -208,24 +209,24 @@ def training(X_train, y_train, X_val, y_val,
 
                 if iter_total % 100 == 0:
                     # do validation
-                    valid_eve, merge_result = sess.run([eve, merge], feed_dict={xs: X_val,
+                    valid_mse, merge_result = sess.run([mserr, merge], feed_dict={xs: X_val,
                                                                                 ys: y_val,
                                                                                 is_training: False})
-                    valid_acc = 100 - valid_eve * 100 / y_val.shape[0]
+                    
                     if verbose:
-                        print('{}/{} loss: {} validation accuracy : {}%'.format(
+                        print('{}/{} loss: {} validation mse : {}%'.format(
                             batch_size * (itr + 1),
                             X_train.shape[0],
                             cur_loss,
-                            valid_acc))
+                            valid_mse))
 
                     # save the merge result summary
                     writer.add_summary(merge_result, iter_total)
 
                     # when achieve the best validation accuracy, we store the model paramters
-                    if valid_acc > best_acc:
-                        print('Best validation accuracy! iteration:{} accuracy: {}%'.format(iter_total, valid_acc))
-                        best_acc = valid_acc
+                    if valid_mse < best_mse:
+                        print('Best validation mse! iteration:{} accuracy: {}%'.format(iter_total, valid_mse))
+                        best_mse = valid_mse
                         saver.save(sess, 'model/{}'.format(cur_model_name))
 
-    print("Traning ends. The best valid accuracy is {}. Model named {}.".format(best_acc, cur_model_name))
+    print("Traning ends. The best valid accuracy is {}. Model named {}.".format(best_mse, cur_model_name))
