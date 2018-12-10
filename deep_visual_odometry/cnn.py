@@ -52,7 +52,7 @@ class conv_layer(object):
 
 
 class max_pooling_layer(object):
-    def __init__(self, input_x, k_size, padding="SAME"):
+    def __init__(self, input_x, k_size, padding="VALID"):
         """
         :param input_x: The input of the pooling layer.
         :param k_size: The kernel size you want to behave pooling action.
