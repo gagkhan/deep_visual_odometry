@@ -40,9 +40,16 @@ class KITTIdata(object):
         self.poses = {}
         
         self.masks = {}
-        self.index_train = {}
-        self.index_val = {}
-        self.index_test = {}
+        self.train_mask = {}
+        self.val_mask = {}
+        self.test_mask = {}
+
+        
+        self.train_idx = {}
+        self.val_idx = {}
+        self.test_idx = {}
+        self.val_frac = val_frac
+        self.test_frac = test_frac
         
         for sequence in sequences:
 
@@ -50,13 +57,19 @@ class KITTIdata(object):
             self.dataset[sequence] =  dataset
             self.dataset_len[sequence] = len(self.dataset[sequence].cam2_files)
             self.img_idx[sequence] = 0
-            self.index_val[sequence] = int(np.floor((self.dataset_len[sequence]-sequence_len)*(1-val_frac-test_frac)))
-            self.index_test[sequence] = int(np.floor((self.dataset_len[sequence]-sequence_len)*(1-val_frac-test_frac) + (self.dataset_len[sequence]-sequence_len)*val_frac))
-            self.index_train[sequence] = 0
             # mask definition
             np.random.seed(100)
             self.masks[sequence] = np.random.choice(self.dataset_len[sequence]-sequence_len,self.dataset_len[sequence]-sequence_len,replace = False)
+            mask_len = self.dataset_len[sequence]-sequence_len
+    
+            self.train_mask[sequence] = self.masks[sequence][0:int(np.round(mask_len*(1-val_frac-test_frac)))]
+            self.val_mask[sequence] = self.masks[sequence][int(np.round(mask_len*(1-val_frac-test_frac))):int(np.round(mask_len*(1-test_frac)))]
+            self.test_mask[sequence] = self.masks[sequence][int(np.round(mask_len*(1-test_frac))):mask_len]
 
+            self.train_idx[sequence] = 0
+            self.val_idx[sequence] = 0
+            self.test_idx[sequence] = 0
+            
             input_images = []
             velocities = []
             poses = []
@@ -108,7 +121,6 @@ class KITTIdata(object):
 
         sequence = self.sequences[self.seq_idx]
         idx = self.img_idx[sequence]
-        print(idx)
         series_input = self.input[sequence][idx: idx + sequence_len]
         velocities = self.velocities[sequence][idx: idx + sequence_len]
         poses = self.poses[sequence][idx: idx + sequence_len]
@@ -121,86 +133,84 @@ class KITTIdata(object):
         return series_input, velocities, poses
 
     # new functions to load data
-    def get_series_batch_train(self, batch_size = 10, sequence_len = 100,val_frac = 0.1,test_frac = 0.1, sequences = None, ):
+    def get_series_batch_train(self, batch_size = 10, sequence_len = 100,sequences = None, ):
         batch_input = []
         batch_velocities = []
         batch_poses = []
         for _ in range(batch_size):
             
-            input_images, velocities, poses = self.get_series_train(sequence_len,val_frac,test_frac,mode = 'train')
+            input_images, velocities, poses = self.get_series_train(sequence_len)
             batch_input.append(input_images)
             batch_velocities.append(velocities)
             batch_poses.append(poses)
 
         return np.stack(batch_input), np.stack(velocities), np.stack(poses)
 
-    def load_data_validation(self,sequence_len = 100, val_frac = 0.1, test_frac = 0.1, sequences = None,):
+    def load_data_validation(self,sequence_len = 100, sequences = None,):
         val_input = []
         val_velocities = []
         val_poses = []
         if sequences is None:
            sequences = self.sequences
         for sequence in sequences:
-            seq_len = self.dataset_len[sequence]
-            index_mask = self.masks[sequence]
-            val_idx = self.index_val[sequence]
-            print(val_idx)
-            test_portion = int(np.floor((self.dataset_len[sequence]-sequence_len)*test_frac))
-            print(index_mask[val_idx],test_portion)
-            while (index_mask[val_idx]+sequence_len < seq_len-test_portion-1):
-                series_input = self.input[sequence][index_mask[val_idx]:index_mask[val_idx]+sequence_len]
-                velocities = self.velocities[sequence][index_mask[val_idx]:index_mask[val_idx]+sequence_len]
-                poses = self.poses[sequence][index_mask[val_idx]:index_mask[val_idx]+sequence_len]
+            val_mask = self.val_mask[sequence]
+            val_mask_len = len(val_mask)
+            val_idx = self.val_idx[sequence]
+            
+            
+            while(val_idx<val_mask_len):
+                series_input = self.input[sequence][val_mask[val_idx]:val_mask[val_idx]+sequence_len]
+                velocities = self.velocities[sequence][val_mask[val_idx]:val_mask[val_idx]+sequence_len]
+                poses = self.poses[sequence][val_mask[val_idx]:val_mask[val_idx]+sequence_len]
                 val_idx+=1
-                print(val_idx,sequence)
                 val_input.append(series_input)
                 val_velocities.append(velocities)
                 val_poses.append(poses)
-
+            
         return np.stack(val_input),np.stack(val_velocities),np.stack(val_poses)
 
-    def load_data_test(self,sequence_len = 100, val_frac = 0.1, test_frac = 0.1, sequences = None,):
+    def load_data_test(self,sequence_len = 100, sequences = None,):
         test_input = []
         test_velocities = []
         test_poses = []
         if sequences is None:
            sequences = self.sequences
         for sequence in sequences:
-            seq_len = self.dataset_len[sequence]
-            index_mask = self.masks[sequence]
-            test_idx = self.index_test[sequence]
-            print(test_idx)
-            print(index_mask[test_idx])
-            while (test_idx < len(index_mask) and(index_mask[test_idx]+sequence_len) < seq_len-1):
-                series_input = self.input[sequence][index_mask[test_idx]:index_mask[test_idx]+sequence_len]
-                velocities = self.velocities[sequence][index_mask[test_idx]:index_mask[test_idx]+sequence_len]
-                poses = self.poses[sequence][index_mask[test_idx]:index_mask[test_idx]+sequence_len]
+            test_mask = self.test_mask[sequence]
+            test_mask_len = len(test_mask)
+            test_idx = self.test_idx[sequence]
+            
+            
+            while(test_idx<test_mask_len):
+                series_input = self.input[sequence][test_mask[test_idx]:test_mask[test_idx]+sequence_len]
+                velocities = self.velocities[sequence][test_mask[test_idx]:test_mask[test_idx]+sequence_len]
+                poses = self.poses[sequence][test_mask[test_idx]:test_mask[test_idx]+sequence_len]
                 test_idx+=1
-                print(test_idx,sequence)
                 test_input.append(series_input)
                 test_velocities.append(velocities)
                 test_poses.append(poses)
-
+            
         return np.stack(test_input),np.stack(test_velocities),np.stack(test_poses)
     
-    def get_series_train(self, sequence_len = 100, val_frac = 0.1, test_frac = 0.1, mode = 'train',sequences = None,):
+    def get_series_train(self, sequence_len = 100, sequences = None,):
         if sequences is None:
            sequences = self.sequences
         seq_num = np.random.randint(0,len(sequences))
         selected_sequence = sequences[seq_num]
-        index_mask = self.masks[selected_sequence]
-        seq_len = self.dataset_len[selected_sequence]
-        
-        if mode == 'train':
-            train_idx = self.index_train[selected_sequence]
-            print(train_idx,index_mask[train_idx]+sequence_len)
+        train_mask = self.train_mask[selected_sequence]
+
+        train_mask_len = len(train_mask)
+        train_idx = self.train_idx[selected_sequence]
             
-            series_input = self.input[selected_sequence][index_mask[train_idx]:index_mask[train_idx]+sequence_len]
-            velocities = self.velocities[selected_sequence][index_mask[train_idx]:index_mask[train_idx]+sequence_len]
-            poses = self.poses[selected_sequence][index_mask[train_idx]:index_mask[train_idx]+sequence_len]
-            self.index_train[selected_sequence]+=1
+        series_input = self.input[selected_sequence][train_mask[train_idx]:train_mask[train_idx]+sequence_len]
+        velocities = self.velocities[selected_sequence][train_mask[train_idx]:train_mask[train_idx]+sequence_len]
+        poses = self.poses[selected_sequence][train_mask[train_idx]:train_mask[train_idx]+sequence_len]
+        self.train_idx[selected_sequence]+=1
+
+        if(self.train_idx[selected_sequence]>=train_mask_len-1):
+            self.train_idx[selected_sequence] = 0
+           
             
-    
         return series_input, velocities, poses
         
     def load_data_input_model(self):
