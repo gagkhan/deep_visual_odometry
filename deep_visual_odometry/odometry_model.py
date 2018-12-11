@@ -91,7 +91,7 @@ class OdomModel(object):
         # reshape
         x = tf.reshape(seq_output, [-1, self.rnn_size])
 
-        # define softmax layer variables:
+        # define mse layer variables:
         with tf.variable_scope('mse'):
             mse_w = tf.Variable(tf.truncated_normal([self.rnn_size, 3], stddev=0.1))
             mse_b = tf.Variable(tf.zeros(3))
@@ -106,11 +106,9 @@ class OdomModel(object):
         '''
         calculate loss according to logits and targets
         '''
-        # One-hot coding
 
-
-        # Softmax cross entropy loss
-        loss = tf.squared_difference(logits=self.logits, labels=self.targets)
+        # MSE loss
+        loss = tf.squared_difference(self.logits, self.targets)
         self.loss = tf.reduce_mean(loss)
 
     def optimizer(self):
@@ -127,8 +125,8 @@ class OdomModel(object):
         self.optimizer for later use
         '''
         # using clipping gradients
-        # optimizer = tf.train.AdamOptimizer(learning_rate=self.learning_rate)
-        optimizer = tf.train.RMSPropOptimizer(learning_rate=self.learning_rate)
+        optimizer = tf.train.AdamOptimizer(learning_rate=self.learning_rate)
+        # optimizer = tf.train.RMSPropOptimizer(learning_rate=self.learning_rate)
         grads = optimizer.compute_gradients(self.loss)
         clipped_grads = [(tf.clip_by_value(grad, -self.grad_clip, self.grad_clip), var) for grad, var in grads]
         self.optimizer = optimizer.apply_gradients(clipped_grads)
@@ -168,6 +166,24 @@ class OdomModel(object):
             self.saver.save(sess, "checkpoints/i{}_l{}.ckpt".format(counter, self.rnn_size))
 
     #TODO: Replace with test()
+    
+    # cite: https://github.com/Oceanland-428/Pedestrian-Trajectories-Prediction-with-RNN/blob/master/train_test_LSTM.py
+    
+    def test(self, checkpoint, testing_X, batch_size):
+        with tf.Session() as sess:
+            self.saver.restore(sess, checkpoint)
+            initial_state = sess.run(self.initial_state)
+            test_prediction = np.empty([int(len(testing_X)/batch_size)*batch_size, 3])
+            for batch in range(int(len(testing_X)/batch_size)):
+                x_batch = testing_X[batch*batch_size:(batch+1)*batch_size,:]
+                pre,initial_state = sess.run([self.logits,self.initial_state], feed_dict={self.inputs: x_batch,
+                                                       self.keep_prob: 1,
+                                                       self.initial_state: initial_state})
+                test_prediction[batch*batch_size : (batch+1)*batch_size, :] = pre
+        
+        return test_prediction
+    
+    
     def sample(self, checkpoint, n_samples, vocab_size, vocab_to_ind, ind_to_vocab, prime='You \n'):
         '''
         generate new text given the prime word
