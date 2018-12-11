@@ -146,6 +146,31 @@ class KITTIdata(object):
 
         return np.stack(batch_input), np.stack(velocities), np.stack(poses)
 
+    #loads all the possible sequences in the training set all at once
+    def load_data_train(self,sequence_len = 100, sequences = None,):
+        train_input = []
+        train_velocities = []
+        train_poses = []
+        if sequences is None:
+           sequences = self.sequences
+        for sequence in sequences:
+            train_mask = self.train_mask[sequence]
+            train_mask_len = len(train_mask)
+            train_idx = self.train_idx[sequence]
+            
+            
+            while(train_idx<train_mask_len):
+                series_input = self.input[sequence][train_mask[train_idx]:train_mask[train_idx]+sequence_len]
+                velocities = self.velocities[sequence][train_mask[train_idx]:train_mask[train_idx]+sequence_len]
+                poses = self.poses[sequence][train_mask[train_idx]:train_mask[train_idx]+sequence_len]
+                train_idx+=1
+                print(train_idx)
+                train_input.append(series_input)
+                train_velocities.append(velocities)
+                train_poses.append(poses)
+            
+        return np.stack(train_input),np.stack(train_velocities),np.stack(train_poses)
+
     def load_data_validation(self,sequence_len = 100, sequences = None,):
         val_input = []
         val_velocities = []
@@ -221,7 +246,17 @@ class KITTIdata(object):
             velocities.append(self.velocities[sequence])
         input_images = np.concatenate(input_images)
         velocities = np.concatenate(velocities)
-        return input_images, velocities
+        # augment dataset by adding a flipped dataset across X-axis
+        images_flipped = np.flip(input_images[:,:,:,0:3],axis = 2)
+        diff_flipped = np.flip(input_images[:,:,:,3:6],axis = 2)
+        input_images_flipped = np.concatenate((images_flipped,diff_flipped),axis = 3)
+        input_images_final = np.concatenate((input_images,input_images_flipped),axis = 0)
+        
+        velocities_flipped = np.zeros_like(velocities)
+        velocities_flipped[:,0]=velocities[:,0]*(-1)
+        velocities_flipped[:,1]=velocities[:,1]
+        velocities_final = np.concatenate((velocities,velocities_flipped),axis = 0)
+        return input_images_final, velocities_final
 
 
 
