@@ -246,6 +246,7 @@ class KITTIdata(object):
             velocities.append(self.velocities[sequence])
         input_images = np.concatenate(input_images)
         velocities = np.concatenate(velocities)
+        '''
         # augment dataset by adding a flipped dataset across X-axis
         images_flipped = np.flip(input_images[:,:,:,0:3],axis = 2)
         diff_flipped = np.flip(input_images[:,:,:,3:6],axis = 2)
@@ -256,7 +257,12 @@ class KITTIdata(object):
         velocities_flipped[:,0]=velocities[:,0]*(-1)
         velocities_flipped[:,1]=velocities[:,1]
         velocities_final = np.concatenate((velocities,velocities_flipped),axis = 0)
-        return input_images_final, velocities_final
+        # add noise to some percentage of the images
+        
+        indices = np.random.choice(input_images_final.shape[0],int(0.1*input_images_final.shape[0]))
+        input_images_final[indices] = input_images_final[indices]+5*np.random.normal(0,0.7)
+        '''
+        return input_images, velocities
 
 
 
