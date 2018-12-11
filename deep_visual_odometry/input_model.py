@@ -232,18 +232,18 @@ def training(X_train, y_train, X_val, y_val,
     print("Traning ends. The best valid accuracy is {}. Model named {}.".format(best_mse, cur_model_name))
 
 
-def test(X_test, y_test,
-         conv_featmap=[16,16,16,16],
-         fc_units=[128,128],
-         conv_kernel_size=[7,5,5,5],
-         pooling_size=[2,2,2,2],
-         l2_norm=0.01,
-         seed=235,
-         learning_rate=1e-2,
-         epoch=20,
-         batch_size=245,
-         verbose=False,
-         pre_trained_model):
+def test_input_model(X_test, y_test,
+                     conv_featmap=[16,16,16,16],
+                     fc_units=[128,128],
+                     conv_kernel_size=[7,5,5,5],
+                     pooling_size=[2,2,2,2],
+                     l2_norm=0.01,
+                     seed=235,
+                     learning_rate=1e-2,
+                     epoch=20,
+                     batch_size=245,
+                     verbose=False,
+                     pre_trained_model):
 
     print("Building velocity CNN. Parameters: ")
     print("conv_featmap={}".format(conv_featmap))
