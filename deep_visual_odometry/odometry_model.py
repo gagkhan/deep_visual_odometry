@@ -1,6 +1,7 @@
 import tensorflow as tf
 import numpy as np
 import time
+import deep_visual_odometry.kitti_utils as kitti
 
 class OdomModel(object):
     def __init__(self, num_classes, batch_size=64, num_steps=50, cell_type='LSTM',
