@@ -144,7 +144,7 @@ class KITTIdata(object):
             batch_velocities.append(velocities)
             batch_poses.append(poses)
 
-        return np.stack(batch_input), np.stack(velocities), np.stack(poses)
+        return np.stack(batch_input), np.stack(batch_velocities), np.stack(batch_poses)
 
     #loads all the possible sequences in the training set all at once
     def load_data_train(self,sequence_len = 100, sequences = None,):
@@ -248,7 +248,7 @@ class KITTIdata(object):
         velocities = np.concatenate(velocities)
         
         '''
-        # augment dataset by adding a flipped dataset across X-axis
+        # augment dataset by adding a flipped dataset across Y-axis
         images_flipped = np.flip(input_images[:,:,:,0:3],axis = 2)
         diff_flipped = np.flip(input_images[:,:,:,3:6],axis = 2)
         input_images_flipped = np.concatenate((images_flipped,diff_flipped),axis = 3)

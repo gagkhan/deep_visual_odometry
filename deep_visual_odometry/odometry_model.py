@@ -4,7 +4,7 @@ import time
 import deep_visual_odometry.kitti_utils as kitti
 
 class OdomModel(object):
-    def __init__(self, num_classes, batch_size=64, num_steps=50, cell_type='LSTM',
+    def __init__(self, batch_size=64, num_steps=50, cell_type='LSTM',
                  rnn_size=128, num_layers=2, learning_rate=0.001,
                  grad_clip=5, train_keep_prob=0.5, sampling=False):
         '''
@@ -29,7 +29,7 @@ class OdomModel(object):
 
         tf.reset_default_graph()
 
-        self.num_classes = num_classes
+        #self.num_classes = num_classes
         self.batch_size = batch_size
         self.num_steps = num_steps
         self.cell_type = cell_type
@@ -50,8 +50,8 @@ class OdomModel(object):
         '''
         build the input layer
         '''
-        self.inputs = tf.placeholder(tf.int32, shape=(self.batch_size, self.num_steps, 2), name='inputs')
-        self.targets = tf.placeholder(tf.int32, shape=(self.batch_size, self.num_steps, 3), name='targets')
+        self.inputs = tf.placeholder(tf.float32, shape=(self.batch_size, self.num_steps, 2), name='inputs')
+        self.targets = tf.placeholder(tf.float32, shape=(self.batch_size, self.num_steps, 3), name='targets')
 
         # add keep_prob
         self.keep_prob = tf.placeholder(tf.float32, name='keep_prob')
@@ -82,6 +82,7 @@ class OdomModel(object):
         self.initial_state = multi_rnn_cell.zero_state(self.batch_size, dtype=tf.float32)
         self.rnn_outputs, self.final_state = tf.nn.dynamic_rnn(multi_rnn_cell, inputs=self.inputs, dtype=tf.float32,
                                                                initial_state=self.initial_state)
+        print('output size',self.rnn_outputs.get_shape())
 
     def outputs_layer(self):
         '''
@@ -90,7 +91,9 @@ class OdomModel(object):
         # concate the output of rnn_cell，example: [[1,2,3],[4,5,6]] -> [1,2,3,4,5,6]
         seq_output = tf.concat(self.rnn_outputs, axis=1)  # tf.concat(concat_dim, values)
         # reshape
-        x = tf.reshape(seq_output, [-1, self.rnn_size])
+        print('seq_output shape',tf.concat(self.rnn_outputs, axis=1).get_shape())
+        #x = tf.reshape(seq_output, [-1, self.rnn_size])
+        x = seq_output
 
         # define mse layer variables:
         with tf.variable_scope('mse'):
@@ -98,7 +101,8 @@ class OdomModel(object):
             mse_b = tf.Variable(tf.zeros(3))
 
         # calculate logits
-        self.logits = tf.matmul(x, mse_w) + mse_b
+        
+        self.logits = tf.tensordot(x, mse_w,axes =[[2],[0]]) + mse_b
 
         # softmax generate probability predictions
         # self.prob_pred = tf.nn.softmax(self.logits, name='predictions')
@@ -109,6 +113,8 @@ class OdomModel(object):
         '''
 
         # MSE loss
+        print('shape of logits',self.logits.get_shape())
+        print('shape of targets',self.targets.get_shape())
         loss = tf.squared_difference(self.logits, self.targets)
         self.loss = tf.reduce_mean(loss)
 
@@ -170,6 +176,38 @@ class OdomModel(object):
     
     # cite: https://github.com/Oceanland-428/Pedestrian-Trajectories-Prediction-with-RNN/blob/master/train_test_LSTM.py
     
+    def train_new(self, kitti_data_obj, max_count, save_every_n):
+        self.session = tf.Session()
+
+        with self.session as sess:
+            sess.run(tf.global_variables_initializer())
+            counter = 0
+            new_state = sess.run(self.initial_state)
+            # Train network
+            while(counter<=max_count):
+                counter += 1
+                start = time.time()
+                _, velocities_batch, poses_batch = kitti_data_obj.get_series_batch_train()
+                feed = {self.inputs: velocities_batch,
+                        self.targets: poses_batch,
+                        self.keep_prob: self.train_keep_prob,
+                        self.initial_state: new_state}
+                batch_loss, new_state, _ = sess.run([self.loss,
+                                                     self.final_state,
+                                                     self.optimizer],
+                                                    feed_dict=feed)
+
+                end = time.time()
+                if counter % 5 == 0:
+                    print('step: {} '.format(counter),
+                          'loss: {:.4f} '.format(batch_loss),
+                          '{:.4f} sec/batch'.format((end - start)))
+
+                if (counter % save_every_n == 0):
+                    self.saver.save(sess, "checkpoints/i{}_l{}.ckpt".format(counter, self.rnn_size))
+
+
+            self.saver.save(sess, "checkpoints/i{}_l{}.ckpt".format(counter, self.rnn_size))
     def test(self, checkpoint, testing_X, batch_size):
         with tf.Session() as sess:
             self.saver.restore(sess, checkpoint)
