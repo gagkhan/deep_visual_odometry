@@ -142,7 +142,7 @@ class KITTIdata(object):
         sequence_len = self.sequence_len
         for _ in range(batch_size):
             
-            input_images, velocities, poses = self.get_series_train(sequence_len)
+            input_images, velocities, poses = self.get_series_train()
             batch_input.append(input_images)
             batch_velocities.append(velocities)
             batch_poses.append(poses)
