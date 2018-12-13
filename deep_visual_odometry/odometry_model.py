@@ -138,45 +138,11 @@ class OdomModel(object):
         clipped_grads = [(tf.clip_by_value(grad, -self.grad_clip, self.grad_clip), var) for grad, var in grads]
         self.optimizer = optimizer.apply_gradients(clipped_grads)
 
-    def train(self, batches, max_count, save_every_n):
-        self.session = tf.Session()
-
-        with self.session as sess:
-            sess.run(tf.global_variables_initializer())
-            counter = 0
-            new_state = sess.run(self.initial_state)
-            # Train network
-            for x, y in batches:
-                counter += 1
-                start = time.time()
-                feed = {self.inputs: x,
-                        self.targets: y,
-                        self.keep_prob: self.train_keep_prob,
-                        self.initial_state: new_state}
-                batch_loss, new_state, _ = sess.run([self.loss,
-                                                     self.final_state,
-                                                     self.optimizer],
-                                                    feed_dict=feed)
-
-                end = time.time()
-                if counter % 200 == 0:
-                    print('step: {} '.format(counter),
-                          'loss: {:.4f} '.format(batch_loss),
-                          '{:.4f} sec/batch'.format((end - start)))
-
-                if (counter % save_every_n == 0):
-                    self.saver.save(sess, "checkpoints/i{}_l{}.ckpt".format(counter, self.rnn_size))
-
-                if counter >= max_count:
-                    break
-
-            self.saver.save(sess, "checkpoints/i{}_l{}.ckpt".format(counter, self.rnn_size))
-
     #TODO: Replace with test()
     
     # cite: https://github.com/Oceanland-428/Pedestrian-Trajectories-Prediction-with-RNN/blob/master/train_test_LSTM.py
     
-    def train_new(self, kitti_data_obj, max_count, save_every_n):
+    def train(self, kitti_data_obj, max_count, save_every_n):
         self.session = tf.Session()
 
         with self.session as sess:
@@ -187,7 +153,7 @@ class OdomModel(object):
             while(counter<=max_count):
                 counter += 1
                 start = time.time()
-                _, velocities_batch, poses_batch = kitti_data_obj.get_series_batch_train()
+                _, velocities_batch, poses_batch = kitti_data_obj.get_series_batch_train(batch_size = self.batch_size)
                 feed = {self.inputs: velocities_batch,
                         self.targets: poses_batch,
                         self.keep_prob: self.train_keep_prob,

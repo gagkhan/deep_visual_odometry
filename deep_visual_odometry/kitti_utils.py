@@ -27,6 +27,7 @@ class KITTIdata(object):
     def __init__(self, basedir, sequences,sequence_len=100,val_frac = 0.1,test_frac = 0.1, img_size = None):
         self.sequences = sequences
         self.img_size = img_size
+        self.sequence_len = sequence_len
 
         self.dataset = {}
         self.dataset_len = {}
@@ -99,10 +100,11 @@ class KITTIdata(object):
             
 
 
-    def get_series_batch(self, sequence_len = 100,  batch_size = 10, sequences = None):
+    def get_series_batch(self, batch_size = 10, sequences = None):
         batch_input = []
         batch_velocities = []
         batch_poses = []
+        sequence_len = self.sequence_len
         for _ in range(batch_size):
             
             input_images, velocities, poses = self.get_series(sequence_len)
@@ -112,13 +114,13 @@ class KITTIdata(object):
 
         return np.stack(batch_input), np.stack(velocities), np.stack(poses)
 
-    def get_series(self, sequence_len = 100, sequences = None, ):
+    def get_series(self, sequences = None, ):
         if sequences is None:
            sequences = self.sequences
         self.seq_idx %= len(self.sequences)
         while self.sequences[self.seq_idx] not in sequences:
             self.seq_idx += 1
-
+        sequence_len = self.sequence_len
         sequence = self.sequences[self.seq_idx]
         idx = self.img_idx[sequence]
         series_input = self.input[sequence][idx: idx + sequence_len]
@@ -133,13 +135,14 @@ class KITTIdata(object):
         return series_input, velocities, poses
 
     # new functions to load data
-    def get_series_batch_train(self, batch_size = 10, sequence_len = 100,sequences = None, ):
+    def get_series_batch_train(self, batch_size = 10,sequences = None, ):
         batch_input = []
         batch_velocities = []
         batch_poses = []
+        sequence_len = self.sequence_len
         for _ in range(batch_size):
             
-            input_images, velocities, poses = self.get_series_train(sequence_len)
+            input_images, velocities, poses = self.get_series_train()
             batch_input.append(input_images)
             batch_velocities.append(velocities)
             batch_poses.append(poses)
@@ -147,10 +150,11 @@ class KITTIdata(object):
         return np.stack(batch_input), np.stack(batch_velocities), np.stack(batch_poses)
 
     #loads all the possible sequences in the training set all at once
-    def load_data_train(self,sequence_len = 100, sequences = None,):
+    def load_data_train(self,sequences = None,):
         train_input = []
         train_velocities = []
         train_poses = []
+        sequence_len = self.sequence_len
         if sequences is None:
            sequences = self.sequences
         for sequence in sequences:
@@ -171,10 +175,11 @@ class KITTIdata(object):
             
         return np.stack(train_input),np.stack(train_velocities),np.stack(train_poses)
 
-    def load_data_validation(self,sequence_len = 100, sequences = None,):
+    def load_data_validation(self, sequences = None,):
         val_input = []
         val_velocities = []
         val_poses = []
+        sequence_len = self.sequence_len
         if sequences is None:
            sequences = self.sequences
         for sequence in sequences:
@@ -194,10 +199,11 @@ class KITTIdata(object):
             
         return np.stack(val_input),np.stack(val_velocities),np.stack(val_poses)
 
-    def load_data_test(self,sequence_len = 100, sequences = None,):
+    def load_data_test(self, sequences = None,):
         test_input = []
         test_velocities = []
         test_poses = []
+        sequence_len = self.sequence_len
         if sequences is None:
            sequences = self.sequences
         for sequence in sequences:
@@ -217,9 +223,10 @@ class KITTIdata(object):
             
         return np.stack(test_input),np.stack(test_velocities),np.stack(test_poses)
     
-    def get_series_train(self, sequence_len = 100, sequences = None,):
+    def get_series_train(self, sequences = None,):
         if sequences is None:
            sequences = self.sequences
+        sequence_len = self.sequence_len
         seq_num = np.random.randint(0,len(sequences))
         selected_sequence = sequences[seq_num]
         train_mask = self.train_mask[selected_sequence]
