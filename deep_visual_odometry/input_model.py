@@ -6,7 +6,7 @@ def InputCNN(input_x, input_y, is_training,
           img_len=32, channel_num=6, output_size=3,
           conv_featmap=[16,16,16,16], fc_units=[128,128],
           conv_kernel_size=[7,5,5,5], pooling_size=[2,2,2,2],
-          l2_norm=0.01, seed=235):
+          l2_norm=0.01, seed=235, resp_norm = False):
     assert len(conv_featmap) == len(conv_kernel_size) and len(conv_featmap) == len(pooling_size)
 
     # conv layer
@@ -15,7 +15,7 @@ def InputCNN(input_x, input_y, is_training,
                               out_channel=conv_featmap[0],
                               kernel_shape=conv_kernel_size[0],
                               rand_seed=seed,
-                              index=0)
+                              index=0, resp_norm = resp_norm)
     # pooling layer
     pooling_layer_0 = CNN.max_pooling_layer(input_x=conv_layer_0.output(),
                                         k_size=pooling_size[0],
@@ -28,7 +28,7 @@ def InputCNN(input_x, input_y, is_training,
                               kernel_shape=conv_kernel_size[1],
                               rand_seed=seed,
                               index=1,
-                              y_stride=2)
+                              y_stride=2, resp_norm = resp_norm)
     
     pooling_layer_1 = CNN.max_pooling_layer(input_x=conv_layer_1.output(),
                                         k_size=pooling_size[1],
@@ -40,7 +40,7 @@ def InputCNN(input_x, input_y, is_training,
                               kernel_shape=conv_kernel_size[2],
                               rand_seed=seed,
                               index=2,
-                              y_stride=2)
+                              y_stride=2, resp_norm = resp_norm)
     
     pooling_layer_2 = CNN.max_pooling_layer(input_x=conv_layer_2.output(),
                                         k_size=pooling_size[2],
@@ -53,7 +53,7 @@ def InputCNN(input_x, input_y, is_training,
                               rand_seed=seed,
                               index=3,
                               x_stride=2,
-                              y_stride=2)
+                              y_stride=2, resp_norm = resp_norm)
     
     pooling_layer_3 = CNN.max_pooling_layer(input_x=conv_layer_3.output(),
                                         k_size=pooling_size[3],
@@ -117,7 +117,7 @@ def mse(output, input_y):
 
 def train_step(loss, learning_rate=1e-3):
     with tf.name_scope('train_step'):
-        step = tf.train.AdamOptimizer().minimize(loss)
+        step = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(loss)
 
     return step
 
@@ -166,7 +166,8 @@ def training(X_train, y_train, X_val, y_val,
                          conv_kernel_size=conv_kernel_size,
                          pooling_size=pooling_size,
                          l2_norm=l2_norm,
-                         seed=seed)
+                         seed=seed,
+                         resp_norm = True)
 
     iters = int(X_train.shape[0] / batch_size)
     print('number of batches for training: {}'.format(iters))
