@@ -92,8 +92,8 @@ class OdomModel(object):
         seq_output = tf.concat(self.rnn_outputs, axis=1)  # tf.concat(concat_dim, values)
         # reshape
         print('seq_output shape',tf.concat(self.rnn_outputs, axis=1).get_shape())
-        #x = tf.reshape(seq_output, [-1, self.rnn_size])
-        x = seq_output
+        x = tf.reshape(seq_output, [-1, self.rnn_size])
+        #x = seq_output
 
         # define mse layer variables:
         with tf.variable_scope('mse'):
@@ -101,8 +101,11 @@ class OdomModel(object):
             mse_b = tf.Variable(tf.zeros(3))
 
         # calculate logits
+        print('x',x.get_shape())
+        print('mse_w',mse_w.get_shape())
+        #self.logits = tf.tensordot(x, mse_w,axes =[[2],[0]]) + mse_b
         
-        self.logits = tf.tensordot(x, mse_w,axes =[[2],[0]]) + mse_b
+        self.logits = tf.matmul(x, mse_w) + mse_b
 
         # softmax generate probability predictions
         # self.prob_pred = tf.nn.softmax(self.logits, name='predictions')
@@ -113,9 +116,10 @@ class OdomModel(object):
         '''
 
         # MSE loss
-        print('shape of logits',self.logits.get_shape())
+        out_RNN = tf.reshape(self.logits, [-1,self.num_steps, 3])
+        print('shape of logits',out_RNN.get_shape())
         print('shape of targets',self.targets.get_shape())
-        loss = tf.squared_difference(self.logits, self.targets)
+        loss = tf.squared_difference(out_RNN, self.targets)
         self.loss = tf.reduce_mean(loss)
 
     def optimizer(self):
@@ -164,7 +168,7 @@ class OdomModel(object):
                                                     feed_dict=feed)
 
                 end = time.time()
-                if counter % 5 == 0:
+                if counter % 500 == 0:
                     print('step: {} '.format(counter),
                           'loss: {:.4f} '.format(batch_loss),
                           '{:.4f} sec/batch'.format((end - start)))
@@ -188,37 +192,3 @@ class OdomModel(object):
         
         return test_prediction
     
-    
-    def sample(self, checkpoint, n_samples, vocab_size, vocab_to_ind, ind_to_vocab, prime='You \n'):
-        '''
-        generate new text given the prime word
-        inputs:
-        :param n_samples: (int) number of characters you want to generate
-        :param vocab_size: (int) number of vocabulary size of your input data
-        :param vocab_to_ind, ind_to_vocab: mapping from unique characters to indices
-        :param prime: (str) you new text starting word
-        outputs:
-        -a string of generated characters
-        '''
-        # change text into character list
-        samples = [c for c in prime]
-        prime_input = np.array([vocab_to_ind[c] for c in samples], dtype=np.int32)
-        output = prime
-        with tf.Session() as sess:
-            self.saver.restore(sess, checkpoint)
-            initial_state = sess.run(self.initial_state)
-            # priming
-            for x in prime_input:
-                prob_pred, initial_state = sess.run([self.prob_pred, self.final_state],
-                                                    feed_dict={self.inputs: x.reshape(1, 1),
-                                                               self.keep_prob: 1.0,
-                                                               self.initial_state: initial_state})  # # prediction
-            for i in range(n_samples):
-                ind = pick_top_n(prob_pred, vocab_size, top_n=3)
-                output += ind_to_vocab[ind]
-                prob_pred, initial_state = sess.run([self.prob_pred, self.final_state],
-                                                    feed_dict={self.inputs: ind.reshape(1, 1), self.keep_prob: 1.0,
-                                                               self.initial_state: initial_state})
-        return output
-
-

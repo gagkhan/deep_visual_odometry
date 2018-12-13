@@ -241,6 +241,7 @@ class KITTIdata(object):
 
         if(self.train_idx[selected_sequence]>=train_mask_len-1):
             self.train_idx[selected_sequence] = 0
+            #print('training set gone through')
            
             
         return series_input, velocities, poses
