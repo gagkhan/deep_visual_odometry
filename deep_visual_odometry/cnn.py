@@ -129,7 +129,7 @@ class fc_layer(object):
 
             # added in dropout
             dropped = tf.nn.dropout(input_x,keep_prob)
-            cell_out = tf.add(tf.matmul(dropped, weight), bias)
+            cell_out = tf.add(tf.matmul(dropped, weight), bias, name='output_%d' % index)
             if activation_function is not None:
                 cell_out = activation_function(cell_out)
 

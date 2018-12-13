@@ -153,10 +153,9 @@ def training(X_train, y_train, X_val, y_val,
     print("learning_rate={}".format(learning_rate))
 
     # define the variables and parameter needed during training
-    with tf.name_scope('inputs'):
-        xs = tf.placeholder(shape=[None, 50, 150, 6], dtype=tf.float32)
-        ys = tf.placeholder(shape=[None, 2], dtype=tf.float32)
-        is_training = tf.placeholder(tf.bool, name='is_training')
+    xs = tf.placeholder(shape=[None, 50, 150, 6], dtype=tf.float32,name="xs")
+    ys = tf.placeholder(shape=[None, 2], dtype=tf.float32,name="ys")
+    is_training = tf.placeholder(tf.bool, name="is_training")
 
     output, loss = InputCNN(xs, ys, is_training,
                          img_len=32,
@@ -225,65 +224,23 @@ def training(X_train, y_train, X_val, y_val,
 
                     # when achieve the best validation accuracy, we store the model paramters
                     if valid_mse < best_mse:
-                        print('Best validation mse! iteration:{} accuracy: {}%'.format(iter_total, valid_mse))
+                        print('Best validation mse! iteration:{} accuracy: {}'.format(iter_total, valid_mse))
                         best_mse = valid_mse
                         saver.save(sess, 'model/{}'.format(cur_model_name))
 
     print("Traning ends. The best valid accuracy is {}. Model named {}.".format(best_mse, cur_model_name))
 
 
-def test_input_model(X_test, y_test,
-                     conv_featmap=[16,16,16,16],
-                     fc_units=[128,128],
-                     conv_kernel_size=[7,5,5,5],
-                     pooling_size=[2,2,2,2],
-                     l2_norm=0.01,
-                     seed=235,
-                     learning_rate=1e-2,
-                     epoch=20,
-                     batch_size=245,
-                     verbose=False,
-                     pre_trained_model):
-
-    print("Building velocity CNN. Parameters: ")
-    print("conv_featmap={}".format(conv_featmap))
-    print("fc_units={}".format(fc_units))
-    print("conv_kernel_size={}".format(conv_kernel_size))
-    print("pooling_size={}".format(pooling_size))
-    print("l2_norm={}".format(l2_norm))
-    print("seed={}".format(seed))
-    print("learning_rate={}".format(learning_rate))
-
-    # define the variables and parameter needed during training
-    with tf.name_scope('inputs'):
-        xs = tf.placeholder(shape=[None, 50, 150, 6], dtype=tf.float32)
-        ys = tf.placeholder(shape=[None, 2], dtype=tf.float32)
-        is_training = tf.placeholder(tf.bool, name='is_training')
-
-    output, loss = InputCNN(xs, ys, is_training,
-                         img_len=32,
-                         channel_num=6,
-                         output_size=2,
-                         conv_featmap=conv_featmap,
-                         fc_units=fc_units,
-                         conv_kernel_size=conv_kernel_size,
-                         pooling_size=pooling_size,
-                         l2_norm=l2_norm,
-                         seed=seed)
+def test_input_model(pre_trained_model,X_test, y_test):
 
     with tf.Session() as sess:
-        merge = tf.summary.merge_all()
-
-        writer = tf.summary.FileWriter("log/{}".format(cur_model_name), sess.graph)
-        saver = tf.train.Saver()
-        sess.run(tf.global_variables_initializer())
-
-        # restore the pre_trained
-        try:
-            print("Load the model from: {}".format(pre_trained_model))
-            saver.restore(sess, 'model/{}'.format(pre_trained_model))
-        except Exception:
-            raise ValueError("Load model Failed!")
+        saver = tf.train.import_meta_graph('model/CNN_Velocity_Model.meta')
+        saver.restore(sess,tf.train.latest_checkpoint('model/'))
+        graph = tf.get_default_graph()
+        xs = graph.get_tensor_by_name("xs:0")
+        ys = graph.get_tensor_by_name("ys:0")
+        is_training = graph.get_tensor_by_name("is_training:0")
+        output = graph.get_tensor_by_name("fc_layer_2/output_2:0")
             
         test_out = sess.run(output, feed_dict={xs: X_test,
                                                ys: y_test,
