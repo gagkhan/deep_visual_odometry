@@ -224,11 +224,11 @@ def training(X_train, y_train, X_val, y_val,
 
                     # when achieve the best validation accuracy, we store the model paramters
                     if valid_mse < best_mse:
-                        print('Best validation mse! iteration:{} accuracy: {}'.format(iter_total, valid_mse))
+                        print('Best validation mse! iteration:{} val_mse: {}'.format(iter_total, valid_mse))
                         best_mse = valid_mse
                         saver.save(sess, 'model/{}'.format(cur_model_name))
 
-    print("Traning ends. The best valid accuracy is {}. Model named {}.".format(best_mse, cur_model_name))
+    print("Traning ends. The best valid mse is {}. Model named {}.".format(best_mse, cur_model_name))
 
 
 def test_input_model(pre_trained_model,X_test, y_test):
