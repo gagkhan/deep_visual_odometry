@@ -119,7 +119,8 @@ class OdomModel(object):
         out_RNN = tf.reshape(self.logits, [-1,self.num_steps, 3])
         print('shape of logits',out_RNN.get_shape())
         print('shape of targets',self.targets.get_shape())
-        loss = tf.squared_difference(out_RNN, self.targets)
+        #loss = tf.squared_difference(out_RNN, self.targets)
+        loss = tf.losses.absolute_difference(out_RNN,self.targets)
         self.loss = tf.reduce_mean(loss)
 
     def optimizer(self):
