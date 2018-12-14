@@ -7,9 +7,18 @@ def angle(T):
     return np.arctan2(R[1, 0], R[0, 0])
 
 def get_vel(T_prev, T_curr):
-    delta_T = np.dot(np.linalg.inv(T_prev), T_curr)
-    delta_rot = angle(delta_T)
-    delta_pos = np.linalg.norm(delta_T[0:3, 3])
+    # delta_T = np.dot(np.linalg.inv(T_prev), T_curr)
+    # delta_rot = angle(delta_T)
+    # delta_pos = np.linalg.norm(delta_T[0:3, 3])
+
+    delta_pose = get_pose(T_curr) - get_pose(T_prev)
+    delta_pos = np.linalg.norm(delta_pose[0:2])
+    delta_rot = delta_pose[2]
+    while delta_rot >= np.pi:
+        delta_rot -= 2*np.pi
+    while delta_rot < -np.pi:
+        delta_rot += 2*np.pi
+
     return np.array([delta_pos, delta_rot])
 
 def get_pose(T):
@@ -24,7 +33,7 @@ class KITTIdata(object):
     dsa
 
     """
-    def __init__(self, basedir, sequences,sequence_len=100,val_frac = 0.1,test_frac = 0.1, img_size = None):
+    def __init__(self, basedir, sequences,sequence_len=100, val_frac = 0.1,test_frac = 0.1, img_size = None):
         self.sequences = sequences
         self.img_size = img_size
         self.sequence_len = sequence_len
@@ -89,9 +98,8 @@ class KITTIdata(object):
 
                 input_images.append(np.concatenate((image, diff_image), axis = 2))
                 image_prev = image
-                velocities.append(get_vel(dataset.poses[i-1], dataset.poses[i]))
                 poses.append(get_pose(dataset.poses[i]))
-
+                velocities.append(get_vel(dataset.poses[i-1], dataset.poses[i]))
 
             self.input[sequence] = np.stack(input_images)
             self.velocities[sequence] = np.stack(velocities)

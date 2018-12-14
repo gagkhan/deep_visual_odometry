@@ -207,7 +207,7 @@ def training(X_train, y_train, X_val, y_val,
                                                                 ys: training_batch_y,
                                                                 is_training: True})
 
-                if iter_total % 100 == 0:
+                if iter_total % 1 == 0:
                     # do validation
                     valid_mse, merge_result = sess.run([mserr, merge], feed_dict={xs: X_val,
                                                                                 ys: y_val,
