@@ -168,6 +168,8 @@ class OdomModel(object):
 
 
             self.saver.save(sess, "checkpoints/i{}_l{}.ckpt".format(counter, self.rnn_size))
+            
+    
     def test(self, checkpoint, testing_X, batch_size):
         with tf.Session() as sess:
             self.saver.restore(sess, checkpoint)

@@ -90,7 +90,6 @@ def InputCNN(input_x, input_y, is_training,
                           out_size=output_size,
                           rand_seed=seed,
                           keep_prob=.9,
-                          activation_function=tf.nn.relu,
                           index=2)
 
     # saving the parameters for l2_norm loss
