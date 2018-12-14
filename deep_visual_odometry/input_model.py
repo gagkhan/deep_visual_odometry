@@ -15,7 +15,8 @@ def InputCNN(input_x, input_y, is_training,
                               out_channel=conv_featmap[0],
                               kernel_shape=conv_kernel_size[0],
                               rand_seed=seed,
-                              index=0, resp_norm = resp_norm)
+                              index=0,
+                              resp_norm = resp_norm)
     # pooling layer
     pooling_layer_0 = CNN.max_pooling_layer(input_x=conv_layer_0.output(),
                                         k_size=pooling_size[0],
@@ -28,7 +29,8 @@ def InputCNN(input_x, input_y, is_training,
                               kernel_shape=conv_kernel_size[1],
                               rand_seed=seed,
                               index=1,
-                              y_stride=2, resp_norm = resp_norm)
+                              y_stride=2,
+                              resp_norm = resp_norm)
     
     pooling_layer_1 = CNN.max_pooling_layer(input_x=conv_layer_1.output(),
                                         k_size=pooling_size[1],
@@ -40,7 +42,8 @@ def InputCNN(input_x, input_y, is_training,
                               kernel_shape=conv_kernel_size[2],
                               rand_seed=seed,
                               index=2,
-                              y_stride=2, resp_norm = resp_norm)
+                              y_stride=2,
+                              resp_norm = resp_norm)
     
     pooling_layer_2 = CNN.max_pooling_layer(input_x=conv_layer_2.output(),
                                         k_size=pooling_size[2],
@@ -53,7 +56,8 @@ def InputCNN(input_x, input_y, is_training,
                               rand_seed=seed,
                               index=3,
                               x_stride=2,
-                              y_stride=2, resp_norm = resp_norm)
+                              y_stride=2,
+                              resp_norm = resp_norm)
     
     pooling_layer_3 = CNN.max_pooling_layer(input_x=conv_layer_3.output(),
                                         k_size=pooling_size[3],
@@ -97,45 +101,29 @@ def InputCNN(input_x, input_y, is_training,
     with tf.name_scope("loss"):
         l2_loss = tf.reduce_sum([tf.norm(w) for w in fc_w])
         l2_loss += tf.reduce_sum([tf.reduce_sum(tf.norm(w, axis=[-2, -1])) for w in conv_w])
-
-        mse_loss = tf.reduce_mean(
-            tf.squared_difference(fc_layer_2.output(),input_y),
-            name='mse')
-        loss = tf.add(mse_loss, l2_norm * l2_loss, name='loss')
-
+        out_err = output_error(fc_layer_2.output(), input_y)
+        loss = tf.add(out_err, l2_norm * l2_loss, name='loss')
         tf.summary.scalar('Loss', loss)
 
-    return fc_layer_2.output(), loss
+    return fc_layer_2.output(), loss, out_err
 
-
-def mse(output, input_y):
-    with tf.name_scope('mse'):
-        #ce = tf.reduce_mean(tf.squared_difference(output,input_y))
-        ce = tf.reduce_mean(tf.losses.absolute_difference(output,input_y))
-       
-    return ce
-
+def output_error(output, input_y):
+    with tf.name_scope('output_loss'):
+        #loss = tf.reduce_mean(tf.squared_difference(output,input_y))
+        error = tf.reduce_mean(tf.losses.absolute_difference(output,input_y))
+    return error
 
 def train_step(loss, learning_rate=1e-3):
     with tf.name_scope('train_step'):
         step = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(loss)
-
     return step
-
-"""
-def evaluate(output, input_y):
-    with tf.name_scope('evaluate'):
-        pred = tf.argmax(output, axis=1)
-        error_num = tf.count_nonzero(pred - input_y, name='error_num')
-        tf.summary.scalar('Error_num', error_num)
-    return error_num
-    """
 
 def training(X_train, y_train, X_val, y_val,
              conv_featmap=[16,16,16,16],
              fc_units=[128,128],
              conv_kernel_size=[7,5,5,5],
              pooling_size=[2,2,2,2],
+             resp_norm = False,
              l2_norm=0.01,
              seed=235,
              learning_rate=1e-2,
@@ -158,7 +146,7 @@ def training(X_train, y_train, X_val, y_val,
     ys = tf.placeholder(shape=[None, 2], dtype=tf.float32,name="ys")
     is_training = tf.placeholder(tf.bool, name="is_training")
 
-    output, loss = InputCNN(xs, ys, is_training,
+    output, loss, output_error = InputCNN(xs, ys, is_training,
                          img_len=32,
                          channel_num=6,
                          output_size=2,
@@ -168,16 +156,15 @@ def training(X_train, y_train, X_val, y_val,
                          pooling_size=pooling_size,
                          l2_norm=l2_norm,
                          seed=seed,
-                         resp_norm = True)
+                         resp_norm = resp_norm)
 
     iters = int(X_train.shape[0] / batch_size)
     print('number of batches for training: {}'.format(iters))
 
     step = train_step(loss)
-    mserr = mse(output, ys)
 
     iter_total = 0
-    best_mse = np.inf
+    best_error = np.inf
     cur_model_name = 'CNN_Velocity_Model'
 
     with tf.Session() as sess:
@@ -210,31 +197,30 @@ def training(X_train, y_train, X_val, y_val,
 
                 if iter_total % 1 == 0:
                     # do validation
-                    valid_mse, merge_result = sess.run([mserr, merge], feed_dict={xs: X_val,
+                    valid_error, merge_result = sess.run([output_error, merge], feed_dict={xs: X_val,
                                                                                 ys: y_val,
                                                                                 is_training: False})
                     
                     if verbose:
-                        print('{}/{} loss: {} validation mse : {}%'.format(
+                        print('{}/{} loss: {} validation error : {}'.format(
                             batch_size * (itr + 1),
                             X_train.shape[0],
                             cur_loss,
-                            valid_mse))
+                            valid_error))
 
                     # save the merge result summary
                     writer.add_summary(merge_result, iter_total)
 
                     # when achieve the best validation accuracy, we store the model paramters
-                    if valid_mse < best_mse:
-                        print('Best validation mse! iteration:{} val_mse: {}'.format(iter_total, valid_mse))
-                        best_mse = valid_mse
+                    if valid_error < best_error:
+                        print('Best validation error! iteration:{} valid_error: {}'.format(iter_total, valid_error))
+                        best_error = valid_error
                         saver.save(sess, 'model/{}'.format(cur_model_name))
 
-    print("Traning ends. The best valid mse is {}. Model named {}.".format(best_mse, cur_model_name))
+    print("Traning ends. The best valid mse is {}. Model named {}.".format(valid_error, cur_model_name))
 
 
-def test_input_model(pre_trained_model,X_test, y_test):
-
+def test_input_model(pre_trained_model, X_test, y_test):
     with tf.Session() as sess:
         saver = tf.train.import_meta_graph('model/CNN_Velocity_Model.meta')
         saver.restore(sess,tf.train.latest_checkpoint('model/'))
@@ -243,11 +229,9 @@ def test_input_model(pre_trained_model,X_test, y_test):
         ys = graph.get_tensor_by_name("ys:0")
         is_training = graph.get_tensor_by_name("is_training:0")
         output = graph.get_tensor_by_name("fc_layer_2/output_2:0")
-            
         test_out = sess.run(output, feed_dict={xs: X_test,
                                                ys: y_test,
                                                is_training: False})
-    
     return test_out
         
         
