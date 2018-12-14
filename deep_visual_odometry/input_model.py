@@ -110,8 +110,9 @@ def InputCNN(input_x, input_y, is_training,
 
 def mse(output, input_y):
     with tf.name_scope('mse'):
-        ce = tf.reduce_mean(tf.squared_difference(output,input_y))
-
+        #ce = tf.reduce_mean(tf.squared_difference(output,input_y))
+        ce = tf.reduce_mean(tf.losses.absolute_difference(output,input_y))
+       
     return ce
 
 
