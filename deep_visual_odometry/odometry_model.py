@@ -90,38 +90,27 @@ class OdomModel(object):
         '''
         # concate the output of rnn_cell，example: [[1,2,3],[4,5,6]] -> [1,2,3,4,5,6]
         seq_output = tf.concat(self.rnn_outputs, axis=1)  # tf.concat(concat_dim, values)
+
         # reshape
-        print('seq_output shape',tf.concat(self.rnn_outputs, axis=1).get_shape())
-        x = tf.reshape(seq_output, [-1, self.rnn_size])
-        #x = seq_output
+        print('seq_output shape',seq_output.get_shape())
 
         # define mse layer variables:
         with tf.variable_scope('mse'):
-            mse_w = tf.Variable(tf.truncated_normal([self.rnn_size, 3], stddev=0.1))
-            mse_b = tf.Variable(tf.zeros(3))
+            w = tf.Variable(tf.truncated_normal([self.rnn_size, 3], stddev=0.1))
+            b = tf.Variable(tf.zeros(3))
 
-        # calculate logits
-        print('x',x.get_shape())
-        print('mse_w',mse_w.get_shape())
-        #self.logits = tf.tensordot(x, mse_w,axes =[[2],[0]]) + mse_b
-        
-        self.logits = tf.matmul(x, mse_w) + mse_b
-
-        # softmax generate probability predictions
-        # self.prob_pred = tf.nn.softmax(self.logits, name='predictions')
+        self.outputs = tf.tensordot(seq_output, w, axes= [[len(seq_output.shape)-1],[0]]) + b
 
     def loss(self):
         '''
-        calculate loss according to logits and targets
+        calculate loss from outputs and targets
         '''
 
-        # MSE loss
-        out_RNN = tf.reshape(self.logits, [-1,self.num_steps, 3])
-        print('shape of logits',out_RNN.get_shape())
+        print('shape of outputs',self.outputs.get_shape())
         print('shape of targets',self.targets.get_shape())
-        #loss = tf.squared_difference(out_RNN, self.targets)
-        loss = tf.losses.absolute_difference(out_RNN,self.targets)
-        self.loss = tf.reduce_mean(loss)
+        # error = tf.squared_difference(out_RNN, self.targets)
+        error = tf.losses.absolute_difference(self.outputs, self.targets)
+        self.loss = tf.reduce_mean(error)
 
     def optimizer(self):
         '''
