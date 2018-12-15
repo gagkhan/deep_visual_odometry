@@ -133,11 +133,12 @@ class OdomModel(object):
         self.optimizer = optimizer.apply_gradients(clipped_grads)
     
     # cite: https://github.com/Oceanland-428/Pedestrian-Trajectories-Prediction-with-RNN/blob/master/train_test_LSTM.py
-    
+
     def train(self, kitti_data_obj, max_count, save_every_n, sequences):
         self.session = tf.Session()
-
         with self.session as sess:
+            merge = tf.summary.merge_all()
+            writer = tf.summary.FileWriter("log/{}".format('RNN_velocities_to_pose_model'), self.session.graph)
             sess.run(tf.global_variables_initializer())
             counter = 0
             new_state = sess.run(self.initial_state)
@@ -151,20 +152,16 @@ class OdomModel(object):
                         self.targets: poses_batch,
                         self.keep_prob: self.train_keep_prob,
                         self.initial_state: new_state}
-                batch_loss, new_state, _ = sess.run([self.loss,
-                                                     self.final_state,
-                                                     self.optimizer],
-                                                    feed_dict=feed)
-
+                batch_loss, new_state, _  = sess.run([self.loss, self.final_state, self.optimizer], feed_dict=feed)
                 end = time.time()
                 if counter % 25 == 0:
                     print('step: {} '.format(counter),
                           'loss: {:.4f} '.format(batch_loss),
                           '{:.4f} sec/batch'.format((end - start)))
 
+
                 if (counter % save_every_n == 0):
                     self.saver.save(sess, "checkpoints/i{}_l{}.ckpt".format(counter, self.rnn_size))
-
 
             self.saver.save(sess, "checkpoints/i{}_l{}.ckpt".format(counter, self.rnn_size))
             
