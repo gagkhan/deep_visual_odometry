@@ -157,7 +157,7 @@ class OdomModel(object):
                                                     feed_dict=feed)
 
                 end = time.time()
-                if counter % 500 == 0:
+                if counter % 5 == 0:
                     print('step: {} '.format(counter),
                           'loss: {:.4f} '.format(batch_loss),
                           '{:.4f} sec/batch'.format((end - start)))
@@ -188,17 +188,17 @@ class OdomModel(object):
         with tf.Session() as sess:
             self.saver.restore(sess, checkpoint)
             initial_state = sess.run(self.initial_state)
-
-            y_pred = np.empty_like(X)
-            y_pred[0] = X[0]
-
+            y_pred = np.zeros([X.shape[0], 3])
             for i in range(priming_len):
-                y_pred[i], initial_state = sess.run([self.outputs, self.initial_state],
-                                                    feed_dict={self.inputs: np.array([[X[i]]]),
-                                                               self.keep_prob: 1,
-                                                               self.initial_state: initial_state})
+                x_input = np.array([[X[i]]])
+                feed_dict = {self.inputs: x_input,
+                             self.keep_prob: 1,
+                             self.initial_state: initial_state}
+                y_pred[i], initial_state = sess.run([self.outputs, self.final_state], feed_dict = feed_dict)
+
             for i in range(priming_len, X.shape[0]):
-                y_pred[i], initial_state = sess.run([self.outputs, self.initial_state], feed_dict={self.inputs: np.array([[y_pred[i-1]]]),
+                x_new = np.hstack([X[i, 0:2], y_pred[i-1]])
+                y_pred[i], initial_state = sess.run([self.outputs, self.final_state], feed_dict={self.inputs: np.array([[x_new]]),
                                                                                              self.keep_prob: 1,
                                                                                              self.initial_state: initial_state})
         return y_pred
