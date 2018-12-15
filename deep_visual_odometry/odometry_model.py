@@ -50,8 +50,8 @@ class OdomModel(object):
         '''
         build the input layer
         '''
-        self.inputs = tf.placeholder(tf.float32, shape=(None, None, 5), name='inputs')
-        self.targets = tf.placeholder(tf.float32, shape=(None, None, 3), name='targets')
+        self.inputs = tf.placeholder(tf.float32, shape=(self.batch_size, self.num_steps, 5), name='inputs')
+        self.targets = tf.placeholder(tf.float32, shape=(self.batch_size, self.num_steps, 3), name='targets')
 
         # add keep_prob
         self.keep_prob = tf.placeholder(tf.float32, name='keep_prob')
@@ -169,18 +169,43 @@ class OdomModel(object):
             self.saver.save(sess, "checkpoints/i{}_l{}.ckpt".format(counter, self.rnn_size))
             
     
-    def test(self, checkpoint, testing_X, batch_size):
+    def test_batch(self, checkpoint, testing_X, batch_size):
         with tf.Session() as sess:
             self.saver.restore(sess, checkpoint)
             initial_state = sess.run(self.initial_state)
             test_prediction = np.empty([int(len(testing_X)/batch_size)*batch_size, self.num_steps, 3])
             for batch in range(int(len(testing_X)/batch_size)):
                 x_batch = testing_X[batch*batch_size:(batch+1)*batch_size,:]
-                pre,initial_state = sess.run([self.outputs,self.initial_state], feed_dict={self.inputs: x_batch,
+                pre , initial_state = sess.run([self.outputs,self.initial_state], feed_dict={self.inputs: x_batch,
                                                        self.keep_prob: 1,
                                                        self.initial_state: initial_state})
                 test_prediction[batch*batch_size : (batch+1)*batch_size, :] = pre
         
         return test_prediction
+
+    def test(self, checkpoint, X, priming_len = 5):
+
+        with tf.Session() as sess:
+            self.saver.restore(sess, checkpoint)
+            initial_state = sess.run(self.initial_state)
+
+            y_pred = np.empty_like(X)
+            y_pred[0] = X[0]
+
+            for i in range(priming_len):
+                y_pred[i], initial_state = sess.run([self.outputs, self.initial_state],
+                                                    feed_dict={self.inputs: np.array([[X[i]]]),
+                                                               self.keep_prob: 1,
+                                                               self.initial_state: initial_state})
+            for i in range(priming_len, X.shape[0]):
+                y_pred[i], initial_state = sess.run([self.outputs, self.initial_state], feed_dict={self.inputs: np.array([[y_pred[i-1]]]),
+                                                                                             self.keep_prob: 1,
+                                                                                             self.initial_state: initial_state})
+        return y_pred
+
+
+
+
+
     
 
