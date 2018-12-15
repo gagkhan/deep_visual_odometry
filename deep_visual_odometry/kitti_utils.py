@@ -238,7 +238,7 @@ class KITTIdata(object):
 
     def get_full_sequence(self, sequence):
         inputs = self.input[sequence]
-        inter_inputs = np.hstack(self.velocities[sequence], self.prev_poses[sequence])
+        inter_inputs = np.hstack([self.velocities[sequence], self.prev_poses[sequence]])
         targets = self.target_poses[sequence]
         return inputs, inter_inputs, targets
 

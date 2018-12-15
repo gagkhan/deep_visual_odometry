@@ -50,8 +50,8 @@ class OdomModel(object):
         '''
         build the input layer
         '''
-        self.inputs = tf.placeholder(tf.float32, shape=(None, self.num_steps, 5), name='inputs')
-        self.targets = tf.placeholder(tf.float32, shape=(None, self.num_steps, 3), name='targets')
+        self.inputs = tf.placeholder(tf.float32, shape=(None, None, 5), name='inputs')
+        self.targets = tf.placeholder(tf.float32, shape=(None, None, 3), name='targets')
 
         # add keep_prob
         self.keep_prob = tf.placeholder(tf.float32, name='keep_prob')
