@@ -174,13 +174,14 @@ class OdomModel(object):
         with tf.Session() as sess:
             self.saver.restore(sess, checkpoint)
             initial_state = sess.run(self.initial_state)
-            test_prediction = np.empty([int(len(testing_X)/batch_size)*batch_size, 3])
+            test_prediction = np.empty([int(len(testing_X)/batch_size)*batch_size, self.num_steps, 3])
             for batch in range(int(len(testing_X)/batch_size)):
                 x_batch = testing_X[batch*batch_size:(batch+1)*batch_size,:]
-                pre,initial_state = sess.run([self.logits,self.initial_state], feed_dict={self.inputs: x_batch,
+                pre,initial_state = sess.run([self.outputs,self.initial_state], feed_dict={self.inputs: x_batch,
                                                        self.keep_prob: 1,
                                                        self.initial_state: initial_state})
                 test_prediction[batch*batch_size : (batch+1)*batch_size, :] = pre
         
         return test_prediction
     
+
