@@ -50,8 +50,8 @@ class OdomModel(object):
         '''
         build the input layer
         '''
-        self.inputs = tf.placeholder(tf.float32, shape=(self.batch_size, self.num_steps, 2), name='inputs')
-        self.targets = tf.placeholder(tf.float32, shape=(self.batch_size, self.num_steps, 3), name='targets')
+        self.inputs = tf.placeholder(tf.float32, shape=(None, self.num_steps, 5), name='inputs')
+        self.targets = tf.placeholder(tf.float32, shape=(None, self.num_steps, 3), name='targets')
 
         # add keep_prob
         self.keep_prob = tf.placeholder(tf.float32, name='keep_prob')
@@ -131,12 +131,10 @@ class OdomModel(object):
         grads = optimizer.compute_gradients(self.loss)
         clipped_grads = [(tf.clip_by_value(grad, -self.grad_clip, self.grad_clip), var) for grad, var in grads]
         self.optimizer = optimizer.apply_gradients(clipped_grads)
-
-    #TODO: Replace with test()
     
     # cite: https://github.com/Oceanland-428/Pedestrian-Trajectories-Prediction-with-RNN/blob/master/train_test_LSTM.py
     
-    def train(self, kitti_data_obj, max_count, save_every_n):
+    def train(self, kitti_data_obj, max_count, save_every_n, sequences):
         self.session = tf.Session()
 
         with self.session as sess:
@@ -147,7 +145,8 @@ class OdomModel(object):
             while(counter<=max_count):
                 counter += 1
                 start = time.time()
-                _, velocities_batch, poses_batch = kitti_data_obj.get_series_batch_train(batch_size = self.batch_size)
+                _, velocities_batch, poses_batch = kitti_data_obj.get_series_batch_train(batch_size = self.batch_size,
+                                                                                         sequences = sequences)
                 feed = {self.inputs: velocities_batch,
                         self.targets: poses_batch,
                         self.keep_prob: self.train_keep_prob,
