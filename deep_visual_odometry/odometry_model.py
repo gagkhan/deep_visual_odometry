@@ -157,7 +157,7 @@ class OdomModel(object):
                                                     feed_dict=feed)
 
                 end = time.time()
-                if counter % 5 == 0:
+                if counter % 25 == 0:
                     print('step: {} '.format(counter),
                           'loss: {:.4f} '.format(batch_loss),
                           '{:.4f} sec/batch'.format((end - start)))
