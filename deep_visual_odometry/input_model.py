@@ -219,18 +219,19 @@ def training(X_train, y_train, X_val, y_val,
     print("Traning ends. The best valid mse is {}. Model named {}.".format(valid_error, cur_model_name))
 
 
-def test_input_model(pre_trained_model, X_test, y_test):
+def test_input_model(X_test):
     with tf.Session() as sess:
         saver = tf.train.import_meta_graph('model/CNN_Velocity_Model.meta')
         saver.restore(sess,tf.train.latest_checkpoint('model/'))
         graph = tf.get_default_graph()
         xs = graph.get_tensor_by_name("xs:0")
-        ys = graph.get_tensor_by_name("ys:0")
         is_training = graph.get_tensor_by_name("is_training:0")
         output = graph.get_tensor_by_name("fc_layer_2/output_2:0")
-        test_out = sess.run(output, feed_dict={xs: X_test,
-                                               ys: y_test,
-                                               is_training: False})
+        test_out = []
+        for i in range(X_test.shape[0]):
+            test_out.append(sess.run(output, feed_dict={xs: np.array([X_test[i]]), is_training: False}))
+        test_out = np.array(test_out)
+
     return test_out
         
         
