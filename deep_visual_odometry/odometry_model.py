@@ -98,6 +98,7 @@ class OdomModel(object):
         with tf.variable_scope('mse'):
             w = tf.Variable(tf.truncated_normal([self.rnn_size, 3], stddev=0.1))
             b = tf.Variable(tf.zeros(3))
+            
 
         self.outputs = tf.tensordot(seq_output, w, axes= [[len(seq_output.shape)-1],[0]]) + b
 
@@ -142,6 +143,7 @@ class OdomModel(object):
             counter = 0
             new_state = sess.run(self.initial_state)
             # Train network
+            loss = []
             while(counter<=max_count):
                 counter += 1
                 start = time.time()
@@ -155,7 +157,7 @@ class OdomModel(object):
                                                      self.final_state,
                                                      self.optimizer],
                                                     feed_dict=feed)
-
+                loss.append(batch_loss)
                 end = time.time()
                 if counter % 25 == 0:
                     print('step: {} '.format(counter),
@@ -167,7 +169,7 @@ class OdomModel(object):
 
 
             self.saver.save(sess, "checkpoints/i{}_l{}.ckpt".format(counter, self.rnn_size))
-            
+        return loss
     
     def test_batch(self, checkpoint, testing_X, batch_size):
         with tf.Session() as sess:

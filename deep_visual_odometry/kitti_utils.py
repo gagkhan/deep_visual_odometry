@@ -69,10 +69,15 @@ class KITTIdata(object):
 
             # mask definition
             np.random.seed(100)
+            
             self.masks[sequence] = np.random.choice(self.dataset_len[sequence]-sequence_len,
                                                     self.dataset_len[sequence]-sequence_len,
                                                     replace = False)
-
+            '''
+            
+            self.masks[sequence] = range(self.dataset_len[sequence]-sequence_len)
+            '''
+            
             mask_len = self.dataset_len[sequence]-sequence_len
 
             self.train_mask[sequence] = self.masks[sequence][0:int(np.round(mask_len*(1-val_frac-test_frac)))]
