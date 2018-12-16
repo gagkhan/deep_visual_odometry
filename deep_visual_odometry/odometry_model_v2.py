@@ -43,6 +43,7 @@ class OdomModelV2(object):
         self.inputs_layer()
         self.rnn_layer()
         self.loss()
+        #self.optimizer(global_step = 0)
         self.optimizer()
         self.saver = tf.train.Saver()
         print('odometry model initialized')
@@ -146,6 +147,8 @@ class OdomModelV2(object):
         self.optimizer for later use
         '''
         # using clipping gradients
+        #learning_rate_for_opt = tf.train.exponential_decay(self.learning_rate, global_step,
+        #                                   1000, 0.9, staircase=True)
         optimizer = tf.train.AdamOptimizer(learning_rate=self.learning_rate)
         # optimizer = tf.train.RMSPropOptimizer(learning_rate=self.learning_rate)
         l2 = self.lamda_l2_reg * sum(tf.nn.l2_loss(tf_var) for tf_var in tf.trainable_variables() 
