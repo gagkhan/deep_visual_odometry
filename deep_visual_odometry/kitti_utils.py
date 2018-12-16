@@ -214,10 +214,12 @@ class KITTIdata(object):
 
         return np.stack(inputs), np.stack(inter_inputs), np.stack(targets)
 
-    def load_data_input_model(self):
+    def load_data_input_model(self,sequences = None):
         input_images = []
         velocities = []
-        for sequence in self.sequences:
+        if sequences is None:
+            sequences = self.sequences 
+        for sequence in sequences:
             input_images.append(self.input[sequence])
             velocities.append(self.velocities[sequence])
         input_images = np.concatenate(input_images)
