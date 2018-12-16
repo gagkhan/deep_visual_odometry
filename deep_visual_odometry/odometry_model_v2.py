@@ -212,22 +212,27 @@ class OdomModelV2(object):
         
         return test_prediction
 
-    def test(self, checkpoint, X):
+    def test(self, checkpoint, X, initial_pose):
+        """
+
+        X : (-1, 2)
+        initial_pose = (3,)
+
+        """
+
+        num_samples = X.shape[0]
 
         with tf.Session() as sess:
             self.saver.restore(sess, checkpoint)
             initial_state = sess.run(self.initial_state)
-
-            y_pred = np.zeros([X.shape[0], 3])
-
-            for i in range(0, X.shape[0]):
-                x_new = X[i, 0:2]
-                y_prev = X[i, 2:5]
+            y_pred = np.zeros([num_samples, 3])
+            y_pred[0] = initial_pose
+            for i in range(num_samples):
+                x_new = X[i]
                 feed = {self.inputs: np.array([[x_new]]),
                         self.keep_prob: 1,
                         self.initial_state: initial_state,
-                        self.initial_poses: np.array([y_prev])}
-
+                        self.initial_poses: np.array([y_pred[i]])}
                 y_pred[i], initial_state = sess.run([self.outputs, self.final_state], feed_dict = feed)
         return y_pred
 
