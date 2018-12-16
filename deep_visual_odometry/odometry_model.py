@@ -6,7 +6,7 @@ import deep_visual_odometry.kitti_utils as kitti
 class OdomModel(object):
     def __init__(self, batch_size=64, num_steps=50, cell_type='LSTM',
                  rnn_size=128, num_layers=2, learning_rate=0.001,
-                 grad_clip=5, train_keep_prob=0.5, sampling=False):
+                 grad_clip=5, lamda_l2_reg = 0.001,train_keep_prob=0.5, sampling=False):
         '''
         Initialize the input parameter to define the network
         inputs:
@@ -38,6 +38,7 @@ class OdomModel(object):
         self.learning_rate = learning_rate
         self.grad_clip = grad_clip
         self.train_keep_prob = train_keep_prob
+        self.lamda_l2_reg = lamda_l2_reg
 
         self.inputs_layer()
         self.rnn_layer()
@@ -128,6 +129,12 @@ class OdomModel(object):
         '''
         # using clipping gradients
         optimizer = tf.train.AdamOptimizer(learning_rate=self.learning_rate)
+        
+        
+        l2 = self.lamda_l2_reg * sum(tf.nn.l2_loss(tf_var) for tf_var in tf.trainable_variables() 
+                                            if not ("noreg" in tf_var.name or "Bias" in tf_var.name))
+        self.loss += l2
+        
         # optimizer = tf.train.RMSPropOptimizer(learning_rate=self.learning_rate)
         grads = optimizer.compute_gradients(self.loss)
         clipped_grads = [(tf.clip_by_value(grad, -self.grad_clip, self.grad_clip), var) for grad, var in grads]
@@ -159,7 +166,6 @@ class OdomModel(object):
                                                      self.optimizer],
                                                     feed_dict=feed)
                 loss.append(batch_loss)
-                batch_loss, new_state, _  = sess.run([self.loss, self.final_state, self.optimizer], feed_dict=feed)
                 end = time.time()
                 if counter % 25 == 0:
                     print('step: {} '.format(counter),
