@@ -1,0 +1,76 @@
+The dataset can be downloaded from
+http://www.cvlibs.net/datasets/kitti/
+
+We are interested in only data relevant for odometry which can be found below
+http://www.cvlibs.net/datasets/kitti/eval_odometry.php
+
+------------------------
+data_calib_color.zip
+http://www.cvlibs.net/download.php?file=data_odometry_color.zip
+------------------------
+/dataset
+    /sequences
+        /00
+            calib.txt
+            times.txt
+
+        /01
+
+        ...
+
+        /21
+------------------------
+
+------------------------
+data_odometry_color.zip
+http://www.cvlibs.net/download.php?file=data_odometry_calib.zip
+------------------------
+/dataset
+    /sequences
+        /00
+            calib.txt ( NOTE: to be updated from data_odometry_calib.zip )
+            times.txt ( NOTE: to be updated from data_odometry_calib.zip )
+            /image_2
+                /*.png
+            /image_3  ( NOTE: not used, memory issues)
+                /*.png
+        /01
+        ...
+
+        /21
+------------------------
+
+------------------------
+data_odometry_poses.zip
+http://www.cvlibs.net/download.php?file=data_odometry_poses.zip
+------------------------
+/dataset
+    /poses
+        00.txt
+        01.txt
+        ...
+        10.txt
+------------------------
+
+The dataset we use only consists of only 9 sequences 00 to 08.
+We also do not use images for cam3 which are located in .../image_3 directory for memory issues
+
+------------------------
+resulting dataset
+------------------------
+/dataset
+    /poses
+    /sequences
+        /00
+            calib.txt
+            times.txt
+            /image_2
+                /*.png
+        /01
+        ...
+
+        /08
+------------------------
+
+
+NOTE: The dataset directory must be located at same directory level as the notebook files for running them
