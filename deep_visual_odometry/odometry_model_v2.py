@@ -230,13 +230,15 @@ class OdomModelV2(object):
             initial_state = sess.run(self.initial_state)
             y_pred = np.zeros([num_samples, 3])
             y_pred[0] = initial_pose
-            for i in range(num_samples):
-                x_new = X[i]
+            for i in range(1,num_samples):
+                x_new = X[i-1]               
                 feed = {self.inputs: np.array([[x_new]]),
                         self.keep_prob: 1,
                         self.initial_state: initial_state,
-                        self.initial_poses: np.array([y_pred[i]])}
-                y_pred[i], initial_state = sess.run([self.outputs, self.final_state], feed_dict = feed)
+                        self.initial_poses: np.array([y_pred[i-1]])}
+                output, initial_state = sess.run([self.outputs, self.final_state], feed_dict = feed)           
+                y_pred[i]=output[0,0]
+                #print(output.shape)
         return y_pred
 
 
